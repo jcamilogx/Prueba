@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+  xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+  xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
+  xsi:type="TaskPaneApp">
+
+  <Id>a7f3d2c1-8b4e-4f9a-b6c2-1e5d8a3f7c9b</Id>
+  <Version>1.0.0</Version>
+  <ProviderName>Sonnet AI</ProviderName>
+  <DefaultLocale>es-ES</DefaultLocale>
+
+  <DisplayName DefaultValue="Sonnet AI para Excel" />
+  <Description DefaultValue="Asistente de IA para Excel powered by Claude Sonnet via Azure AI Foundry." />
+
+  <SupportUrl DefaultValue="https://jcamilogx.github.io/Prueba/taskpane.html" />
+
+  <IconUrl DefaultValue="https://jcamilogx.github.io/Prueba/icon32.png" />
+  <HighResolutionIconUrl DefaultValue="https://jcamilogx.github.io/Prueba/icon80.png" />
+
+  <AppDomains>
+    <AppDomain>https://jcamilogx.github.io</AppDomain>
+    <AppDomain>https://fonts.googleapis.com</AppDomain>
+    <AppDomain>https://fonts.gstatic.com</AppDomain>
+    <AppDomain>https://appsforoffice.microsoft.com</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Workbook" />
+  </Hosts>
+
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://jcamilogx.github.io/Prueba/taskpane.html" />
+  </DefaultSettings>
+
+  <Permissions>ReadWriteDocument</Permissions>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/taskpaneappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Hosts>
+      <Host xsi:type="Workbook">
+        <DesktopFormFactor>
+          <FunctionFile resid="Taskpane.Url" />
+          <ExtensionPoint xsi:type="PrimaryCommandSurface">
+            <OfficeTab id="TabHome">
+              <Group id="SonnetAIGroup">
+                <Label resid="Group.Label" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16" />
+                  <bt:Image size="32" resid="Icon.32" />
+                  <bt:Image size="80" resid="Icon.80" />
+                </Icon>
+                <Control xsi:type="Button" id="OpenSonnetAI">
+                  <Label resid="OpenTaskpane.Label" />
+                  <Supertip>
+                    <Title resid="OpenTaskpane.Label" />
+                    <Description resid="OpenTaskpane.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16" />
+                    <bt:Image size="32" resid="Icon.32" />
+                    <bt:Image size="80" resid="Icon.80" />
+                  </Icon>
+                  <Action xsi:type="ShowTaskpane">
+                    <TaskpaneId>SonnetAIPanel</TaskpaneId>
+                    <SourceLocation resid="Taskpane.Url" />
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16" DefaultValue="https://jcamilogx.github.io/Prueba/icon16.png" />
+        <bt:Image id="Icon.32" DefaultValue="https://jcamilogx.github.io/Prueba/icon32.png" />
+        <bt:Image id="Icon.80" DefaultValue="https://jcamilogx.github.io/Prueba/icon80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Taskpane.Url" DefaultValue="https://jcamilogx.github.io/Prueba/taskpane.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="Group.Label"        DefaultValue="Sonnet AI" />
+        <bt:String id="OpenTaskpane.Label" DefaultValue="Abrir Sonnet AI" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="OpenTaskpane.Tooltip" DefaultValue="Abre el panel de Sonnet AI para Excel" />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+
+</OfficeApp>
