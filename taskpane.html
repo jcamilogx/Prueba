@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sonnet AI · Excel</title>
+
+  <!-- Office.js -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════════
+       DESIGN SYSTEM
+    ═══════════════════════════════════════════ */
+    :root {
+      --bg:        #0c0d11;
+      --surface:   #13151c;
+      --surface2:  #1a1d28;
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.13);
+      --accent:    #6c8aff;
+      --accent2:   #a78bfa;
+      --success:   #34d399;
+      --warn:      #fb923c;
+      --err:       #f87171;
+      --txt:       #e8eaf2;
+      --txt2:      #8b93b0;
+      --txt3:      #4e5470;
+      --mono:      'DM Mono', monospace;
+      --sans:      'Sora', sans-serif;
+      --r:         10px;
+      --r2:        6px;
+      --shadow:    0 4px 24px rgba(0,0,0,0.5);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--txt);
+      font-family: var(--sans);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
+
+    /* ═══ SCROLLBAR ═══ */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+    /* ═══ LAYOUT ═══ */
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      position: relative;
+    }
+
+    /* ═══ HEADER ═══ */
+    #header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo-mark {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .logo-mark svg { width: 17px; height: 17px; fill: white; }
+
+    #header-text { flex: 1; min-width: 0; }
+    #header-text h1 { font-size: 14px; font-weight: 600; letter-spacing: -0.3px; }
+    #header-text p  { font-size: 10px; color: var(--txt2); font-family: var(--mono); }
+
+    #model-badge {
+      font-family: var(--mono);
+      font-size: 9px;
+      color: var(--accent);
+      background: rgba(108,138,255,0.12);
+      border: 1px solid rgba(108,138,255,0.25);
+      padding: 3px 7px;
+      border-radius: 20px;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+    }
+
+    /* ═══ SETUP PANEL ═══ */
+    #setup-panel {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .setup-intro {
+      background: linear-gradient(135deg, rgba(108,138,255,0.08), rgba(167,139,250,0.06));
+      border: 1px solid rgba(108,138,255,0.2);
+      border-radius: var(--r);
+      padding: 16px;
+      text-align: center;
+    }
+    .setup-intro h2 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+    .setup-intro p  { color: var(--txt2); font-size: 12px; line-height: 1.6; }
+
+    .setup-section label {
+      display: block;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--txt2);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    textarea,
+    select {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r2);
+      padding: 10px 12px;
+      color: var(--txt);
+      font-family: var(--mono);
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+      resize: none;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(108,138,255,0.12);
+    }
+    select option { background: var(--surface2); }
+
+    .hint {
+      font-size: 10px;
+      color: var(--txt3);
+      margin-top: 5px;
+      font-family: var(--mono);
+      line-height: 1.5;
+    }
+    .hint a { color: var(--accent); text-decoration: none; }
+    .hint a:hover { text-decoration: underline; }
+
+    /* ═══ MAIN VIEW ═══ */
+    #main-view {
+      display: none;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ═══ TABS ═══ */
+    #tabs {
+      display: flex;
+      gap: 2px;
+      padding: 10px 12px 0;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .tab {
+      padding: 7px 14px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--txt2);
+      cursor: pointer;
+      border-radius: 6px 6px 0 0;
+      border: 1px solid transparent;
+      border-bottom: none;
+      transition: all 0.15s;
+      user-select: none;
+      position: relative;
+      bottom: -1px;
+    }
+    .tab:hover { color: var(--txt); background: rgba(255,255,255,0.04); }
+    .tab.active {
+      color: var(--txt);
+      background: var(--bg);
+      border-color: var(--border);
+      border-bottom-color: var(--bg);
+    }
+
+    /* ═══ TAB CONTENT ═══ */
+    .tab-content {
+      display: none;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+    }
+    .tab-content.active { display: flex; }
+
+    /* ──── CHAT TAB ──── */
+    #chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px 14px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .msg {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      animation: fadeUp 0.25s ease forwards;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-role {
+      font-size: 9px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      font-family: var(--mono);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .msg.user .msg-role { color: var(--accent); }
+    .msg.assistant .msg-role { color: var(--success); }
+    .msg.system-msg .msg-role { color: var(--txt3); }
+
+    .role-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .msg.user .role-dot { background: var(--accent); }
+    .msg.assistant .role-dot { background: var(--success); }
+
+    .msg-bubble {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0 var(--r) var(--r) var(--r);
+      padding: 10px 13px;
+      font-size: 12px;
+      line-height: 1.65;
+      color: var(--txt);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+    .msg.user .msg-bubble {
+      background: rgba(108,138,255,0.1);
+      border-color: rgba(108,138,255,0.2);
+      border-radius: var(--r) 0 var(--r) var(--r);
+      align-self: flex-end;
+    }
+    .msg.user { align-items: flex-end; }
+    .msg.assistant { align-items: flex-start; }
+
+    /* code blocks */
+    .msg-bubble code {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid var(--border2);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: var(--mono);
+      font-size: 11px;
+    }
+    .msg-bubble pre {
+      background: rgba(0,0,0,0.35);
+      border: 1px solid var(--border2);
+      border-radius: var(--r2);
+      padding: 10px 12px;
+      margin-top: 8px;
+      overflow-x: auto;
+      font-family: var(--mono);
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .msg-bubble pre code {
+      background: none;
+      border: none;
+      padding: 0;
+      font-size: inherit;
+    }
+
+    /* action buttons on messages */
+    .msg-actions {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .msg-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border2);
+      border-radius: 4px;
+      padding: 4px 9px;
+      color: var(--txt2);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .msg-btn:hover { background: rgba(255,255,255,0.1); color: var(--txt); border-color: var(--accent); }
+    .msg-btn.accent { color: var(--accent); border-color: rgba(108,138,255,0.3); }
+
+    /* typing indicator */
+    .typing-indicator .msg-bubble {
+      padding: 12px 16px;
+    }
+    .dots { display: flex; gap: 4px; align-items: center; }
+    .dots span {
+      width: 5px; height: 5px;
+      background: var(--txt3);
+      border-radius: 50%;
+      animation: bounce 1.2s infinite;
+    }
+    .dots span:nth-child(2) { animation-delay: 0.2s; }
+    .dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce {
+      0%, 60%, 100% { transform: translateY(0); }
+      30% { transform: translateY(-5px); }
+    }
+
+    /* ──── CHAT INPUT ──── */
+    #chat-input-area {
+      padding: 10px 12px 12px;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      background: var(--surface);
+    }
+
+    #quick-actions {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+    .quick-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 4px 10px;
+      color: var(--txt2);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .quick-btn:hover { color: var(--accent); border-color: rgba(108,138,255,0.4); }
+
+    #input-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+
+    #chat-input {
+      flex: 1;
+      min-height: 40px;
+      max-height: 120px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 10px 12px;
+      color: var(--txt);
+      font-family: var(--sans);
+      font-size: 12px;
+      outline: none;
+      resize: none;
+      transition: border-color 0.2s;
+      overflow-y: auto;
+    }
+    #chat-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,138,255,0.1); }
+    #chat-input::placeholder { color: var(--txt3); }
+
+    #send-btn {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border: none;
+      border-radius: var(--r);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    #send-btn:hover { opacity: 0.85; }
+    #send-btn:active { transform: scale(0.95); }
+    #send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    #send-btn svg { width: 16px; height: 16px; fill: white; }
+
+    /* ──── ANALYZE TAB ──── */
+    #analyze-tab { padding: 14px; gap: 12px; overflow-y: auto; }
+
+    .analyze-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+    }
+    .analyze-card-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .analyze-card-header h3 { font-size: 12px; font-weight: 600; }
+    .analyze-card-body { padding: 14px; }
+
+    #selection-info {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--txt2);
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+    #selection-info .sel-highlight {
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    .analyze-action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+    }
+    .analyze-action {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r2);
+      padding: 10px 12px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .analyze-action:hover {
+      border-color: rgba(108,138,255,0.4);
+      background: rgba(108,138,255,0.07);
+    }
+    .analyze-action-icon { font-size: 16px; }
+    .analyze-action-title { font-size: 11px; font-weight: 600; }
+    .analyze-action-desc  { font-size: 10px; color: var(--txt2); }
+
+    #analyze-output {
+      font-size: 12px;
+      color: var(--txt);
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #analyze-output.empty { color: var(--txt3); font-style: italic; font-size: 11px; }
+
+    /* ──── FORMULAS TAB ──── */
+    #formulas-tab { padding: 14px; gap: 12px; overflow-y: auto; }
+
+    .formula-input-area textarea {
+      min-height: 60px;
+      font-size: 12px;
+    }
+
+    #formula-result {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: var(--r);
+      padding: 12px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--success);
+      min-height: 50px;
+      word-break: break-all;
+    }
+    #formula-result.empty { color: var(--txt3); font-style: italic; font-family: var(--sans); font-size: 11px; }
+
+    /* ──── SETTINGS (mini) ──── */
+    #settings-tab { padding: 14px; gap: 16px; overflow-y: auto; }
+
+    .settings-group-title {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--txt3);
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .settings-row:last-child { border-bottom: none; }
+    .settings-row-label { font-size: 12px; }
+    .settings-row-desc  { font-size: 10px; color: var(--txt2); margin-top: 1px; }
+
+    /* toggle */
+    .toggle {
+      width: 34px; height: 18px;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+      flex-shrink: 0;
+    }
+    .toggle.on { background: var(--accent); border-color: var(--accent); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      width: 12px; height: 12px;
+      background: white;
+      border-radius: 50%;
+      top: 2px; left: 2px;
+      transition: transform 0.2s;
+    }
+    .toggle.on::after { transform: translateX(16px); }
+
+    /* ═══ BUTTONS ═══ */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 16px;
+      border-radius: var(--r2);
+      font-family: var(--sans);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+    .btn-secondary {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      color: var(--txt);
+    }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger {
+      background: rgba(248,113,113,0.1);
+      border: 1px solid rgba(248,113,113,0.2);
+      color: var(--err);
+    }
+    .btn-danger:hover { background: rgba(248,113,113,0.2); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-full { width: 100%; }
+
+    /* ═══ STATUS BAR ═══ */
+    #status-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-top: 1px solid var(--border);
+      background: var(--surface);
+      flex-shrink: 0;
+    }
+    #status-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--txt3);
+      flex-shrink: 0;
+    }
+    #status-dot.connected { background: var(--success); animation: pulse 2s infinite; }
+    #status-dot.loading   { background: var(--accent);  animation: pulse 0.8s infinite; }
+    #status-dot.error     { background: var(--err); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+    #status-text { font-size: 10px; color: var(--txt2); font-family: var(--mono); flex: 1; }
+    #clear-btn {
+      font-family: var(--mono);
+      font-size: 10px;
+      background: none;
+      border: none;
+      color: var(--txt3);
+      cursor: pointer;
+      padding: 2px 6px;
+      border-radius: 3px;
+      transition: color 0.15s;
+    }
+    #clear-btn:hover { color: var(--err); }
+
+    /* ═══ UTILS ═══ */
+    .flex-col { display: flex; flex-direction: column; }
+    .gap-8  { gap: 8px; }
+    .gap-12 { gap: 12px; }
+    .hidden { display: none !important; }
+    
+    .shimmer {
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--r2);
+      height: 12px;
+    }
+    @keyframes shimmer { 0% { background-position: -200%; } 100% { background-position: 200%; } }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    /* Context selection indicator */
+    #context-indicator {
+      padding: 5px 12px;
+      background: rgba(108,138,255,0.07);
+      border-bottom: 1px solid rgba(108,138,255,0.15);
+      font-size: 10px;
+      font-family: var(--mono);
+      color: var(--accent);
+      display: none;
+      align-items: center;
+      gap: 6px;
+    }
+    #context-indicator.visible { display: flex; }
+    #context-indicator .ctx-icon { font-size: 12px; }
+    #ctx-clear { margin-left: auto; cursor: pointer; color: var(--txt3); }
+    #ctx-clear:hover { color: var(--err); }
+  </style>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ═══════ HEADER ═══════ -->
+  <div id="header">
+    <div class="logo-mark">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/>
+      </svg>
+    </div>
+    <div id="header-text">
+      <h1>Sonnet AI</h1>
+      <p>Azure AI Foundry · Excel</p>
+    </div>
+    <div id="model-badge">claude-sonnet-4-6</div>
+  </div>
+
+  <!-- ═══════ SETUP PANEL ═══════ -->
+  <div id="setup-panel">
+    <div class="setup-intro">
+      <h2>🚀 Configuración inicial</h2>
+      <p>Conecta tu instancia de <strong>Claude Sonnet</strong> en Azure AI Foundry para potenciar Excel con inteligencia artificial avanzada.</p>
+    </div>
+
+    <div class="setup-section flex-col gap-8">
+      <label>Azure Resource Name</label>
+      <input type="text" id="inp-resource" placeholder="mi-recurso (sin .services.ai.azure.com)" />
+      <div class="hint">
+        Encontrarás este nombre en: <strong>Azure AI Foundry → tu recurso → Nombre</strong><br>
+        Ej: <code>my-company-ai</code>
+      </div>
+    </div>
+
+    <div class="setup-section flex-col gap-8">
+      <label>API Key de Azure Foundry</label>
+      <input type="password" id="inp-apikey" placeholder="••••••••••••••••••••••••••" />
+      <div class="hint">
+        Portal Azure AI Foundry → tu recurso → <strong>Claves y Punto de conexión</strong><br>
+        También puedes usar Entra ID — deja este campo vacío y pasa el token en las cabeceras.
+      </div>
+    </div>
+
+    <div class="setup-section flex-col gap-8">
+      <label>Deployment Name</label>
+      <input type="text" id="inp-deployment" placeholder="claude-sonnet-4-6" value="claude-sonnet-4-6" />
+      <div class="hint">
+        El nombre exacto del deployment en Foundry. Por defecto coincide con el model ID.
+      </div>
+    </div>
+
+    <div class="setup-section flex-col gap-8">
+      <label>Idioma de respuestas</label>
+      <select id="inp-lang">
+        <option value="es">Español</option>
+        <option value="en">English</option>
+        <option value="fr">Français</option>
+        <option value="de">Deutsch</option>
+        <option value="pt">Português</option>
+      </select>
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="saveConfig()">
+      ✓ Guardar y conectar
+    </button>
+
+    <div class="hint" style="text-align:center; font-size:11px;">
+      Tus credenciales se guardan solo en este dispositivo (localStorage del add-in) y no se transmiten excepto a tu endpoint de Azure.
+      <br><br>
+      <a href="https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-claude" target="_blank">→ Documentación Azure AI Foundry + Claude</a>
+    </div>
+  </div>
+
+  <!-- ═══════ MAIN VIEW ═══════ -->
+  <div id="main-view" class="flex-col">
+
+    <!-- Tabs -->
+    <div id="tabs">
+      <div class="tab active" onclick="switchTab('chat')">💬 Chat</div>
+      <div class="tab" onclick="switchTab('analyze')">📊 Analizar</div>
+      <div class="tab" onclick="switchTab('formulas')">⚡ Fórmulas</div>
+      <div class="tab" onclick="switchTab('settings')">⚙ Config</div>
+    </div>
+
+    <!-- ══ CHAT TAB ══ -->
+    <div class="tab-content active" id="chat-tab-content">
+      <!-- Context indicator -->
+      <div id="context-indicator">
+        <span class="ctx-icon">📋</span>
+        <span id="ctx-text">Selección incluida en el contexto</span>
+        <span id="ctx-clear" onclick="clearContext()" title="Limpiar contexto">✕</span>
+      </div>
+
+      <div id="chat-messages">
+        <!-- Welcome msg -->
+        <div class="msg assistant">
+          <div class="msg-role"><span class="role-dot"></span>SONNET AI</div>
+          <div class="msg-bubble">¡Hola! Soy tu asistente de Excel powered by <strong>Claude Sonnet</strong> en Azure AI Foundry. 
+
+Puedo ayudarte con:
+• 📊 Análisis de datos y tendencias
+• ⚡ Generar fórmulas complejas
+• 🐛 Depurar errores (#REF!, #VALUE!, etc.)
+• 📈 Crear tablas dinámicas y gráficos
+• 🔄 Automatizar tareas repetitivas
+
+Selecciona un rango de celdas para incluirlo como contexto, y pregúntame lo que necesites.</div>
+        </div>
+      </div>
+
+      <div id="chat-input-area">
+        <div id="quick-actions">
+          <span class="quick-btn" onclick="quickAction('Explica qué hace esta hoja de cálculo')">🔍 Explicar hoja</span>
+          <span class="quick-btn" onclick="quickAction('Busca errores en la selección y dime cómo corregirlos')">🐛 Buscar errores</span>
+          <span class="quick-btn" onclick="quickAction('Sugiere visualizaciones para estos datos')">📈 Visualizar</span>
+          <span class="quick-btn" onclick="captureSelectionForChat()">📋 Capturar selección</span>
+        </div>
+        <div id="input-row">
+          <textarea id="chat-input" placeholder="Pregunta sobre tus datos, pide fórmulas, analiza rangos..." rows="1"
+            onkeydown="handleInputKey(event)"
+            oninput="autoResize(this)"></textarea>
+          <button id="send-btn" onclick="sendMessage()" title="Enviar (Ctrl+Enter)">
+            <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ ANALYZE TAB ══ -->
+    <div class="tab-content flex-col" id="analyze-tab">
+      <div class="analyze-card">
+        <div class="analyze-card-header">
+          <h3>Selección actual</h3>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:10px;" onclick="refreshSelection()">↻ Refrescar</button>
+        </div>
+        <div class="analyze-card-body">
+          <div id="selection-info" class="empty">Ningún rango seleccionado.<br>Selecciona celdas en Excel y pulsa "Refrescar".</div>
+        </div>
+      </div>
+
+      <div class="analyze-card">
+        <div class="analyze-card-header">
+          <h3>Acciones rápidas</h3>
+        </div>
+        <div class="analyze-card-body">
+          <div class="analyze-action-grid">
+            <button class="analyze-action" onclick="analyzeAction('summary')">
+              <span class="analyze-action-icon">📋</span>
+              <span class="analyze-action-title">Resumen</span>
+              <span class="analyze-action-desc">Resumen estadístico completo</span>
+            </button>
+            <button class="analyze-action" onclick="analyzeAction('trends')">
+              <span class="analyze-action-icon">📈</span>
+              <span class="analyze-action-title">Tendencias</span>
+              <span class="analyze-action-desc">Patrones y variaciones</span>
+            </button>
+            <button class="analyze-action" onclick="analyzeAction('outliers')">
+              <span class="analyze-action-icon">🎯</span>
+              <span class="analyze-action-title">Outliers</span>
+              <span class="analyze-action-desc">Valores atípicos</span>
+            </button>
+            <button class="analyze-action" onclick="analyzeAction('quality')">
+              <span class="analyze-action-icon">✅</span>
+              <span class="analyze-action-title">Calidad</span>
+              <span class="analyze-action-desc">Gaps, duplicados, errores</span>
+            </button>
+            <button class="analyze-action" onclick="analyzeAction('chart')">
+              <span class="analyze-action-icon">🗂️</span>
+              <span class="analyze-action-title">Gráfico ideal</span>
+              <span class="analyze-action-desc">Recomienda visualización</span>
+            </button>
+            <button class="analyze-action" onclick="analyzeAction('formula')">
+              <span class="analyze-action-icon">⚡</span>
+              <span class="analyze-action-title">Sugerir fórmula</span>
+              <span class="analyze-action-desc">Fórmula para este rango</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="analyze-card" style="flex:1; min-height:80px;">
+        <div class="analyze-card-header">
+          <h3>Resultado</h3>
+          <button class="btn btn-secondary" style="padding:4px 10px;font-size:10px;" onclick="copyAnalyzeOutput()">Copiar</button>
+        </div>
+        <div class="analyze-card-body" style="flex:1; overflow-y:auto; max-height:200px;">
+          <div id="analyze-output" class="empty">Los resultados aparecerán aquí...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FORMULAS TAB ══ -->
+    <div class="tab-content flex-col" id="formulas-tab">
+      <div class="analyze-card">
+        <div class="analyze-card-header"><h3>🔮 Generador de fórmulas</h3></div>
+        <div class="analyze-card-body flex-col gap-12">
+          <div class="formula-input-area flex-col gap-8">
+            <label style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Describe qué quieres calcular</label>
+            <textarea id="formula-desc" placeholder="Ej: Calcula el promedio de ventas del mes ignorando celdas vacías y errores, con condición de que la región sea 'Norte'" rows="3"></textarea>
+          </div>
+          <div class="flex-col gap-8">
+            <label style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Rango de referencia (opcional)</label>
+            <input type="text" id="formula-range" placeholder="Ej: A1:D50 · o deja vacío para el rango seleccionado" />
+          </div>
+          <button class="btn btn-primary btn-full" onclick="generateFormula()">⚡ Generar fórmula</button>
+        </div>
+      </div>
+
+      <div class="analyze-card">
+        <div class="analyze-card-header">
+          <h3>Fórmula generada</h3>
+          <div style="display:flex;gap:6px;">
+            <button class="btn btn-secondary" style="padding:4px 10px;font-size:10px;" onclick="copyFormula()">Copiar</button>
+            <button class="btn btn-secondary" style="padding:4px 10px;font-size:10px;" onclick="insertFormula()">→ Insertar</button>
+          </div>
+        </div>
+        <div class="analyze-card-body">
+          <div id="formula-result" class="empty">La fórmula aparecerá aquí...</div>
+        </div>
+      </div>
+
+      <div class="analyze-card">
+        <div class="analyze-card-header"><h3>🐛 Depurador de fórmulas</h3></div>
+        <div class="analyze-card-body flex-col gap-8">
+          <input type="text" id="debug-formula" placeholder="Pega aquí tu fórmula con error..." />
+          <button class="btn btn-secondary btn-full" onclick="debugFormula()">🔍 Analizar y corregir</button>
+          <div id="debug-output" class="empty" style="font-size:11px;color:var(--txt2);line-height:1.6;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ SETTINGS TAB ══ -->
+    <div class="tab-content flex-col" id="settings-tab">
+      <div class="analyze-card">
+        <div class="analyze-card-header"><h3>Conexión Azure AI Foundry</h3></div>
+        <div class="analyze-card-body flex-col gap-12">
+          <div class="flex-col gap-8">
+            <label style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Resource Name</label>
+            <input type="text" id="s-resource" placeholder="mi-recurso" />
+          </div>
+          <div class="flex-col gap-8">
+            <label style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">API Key</label>
+            <input type="password" id="s-apikey" placeholder="••••••••••••••••••" />
+          </div>
+          <div class="flex-col gap-8">
+            <label style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Deployment</label>
+            <input type="text" id="s-deployment" />
+          </div>
+          <div class="flex-col gap-8">
+            <label style="font-size:10px;color:var(--txt2);text-transform:uppercase;letter-spacing:.6px;font-weight:600;">Idioma</label>
+            <select id="s-lang">
+              <option value="es">Español</option>
+              <option value="en">English</option>
+              <option value="fr">Français</option>
+              <option value="de">Deutsch</option>
+              <option value="pt">Português</option>
+            </select>
+          </div>
+          <button class="btn btn-primary btn-full" onclick="updateConfig()">✓ Actualizar configuración</button>
+        </div>
+      </div>
+
+      <div class="analyze-card">
+        <div class="analyze-card-header"><h3>Preferencias</h3></div>
+        <div class="analyze-card-body">
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Incluir contexto automáticamente</div>
+              <div class="settings-row-desc">Captura la selección al enviar mensajes</div>
+            </div>
+            <div class="toggle on" id="toggle-autocontext" onclick="toggleSetting('autocontext')"></div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Respuestas extendidas</div>
+              <div class="settings-row-desc">Permite respuestas más largas y detalladas</div>
+            </div>
+            <div class="toggle" id="toggle-extended" onclick="toggleSetting('extended')"></div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-row-label">Temperatura creativa</div>
+              <div class="settings-row-desc">Mayor variabilidad en las respuestas</div>
+            </div>
+            <div class="toggle" id="toggle-creative" onclick="toggleSetting('creative')"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="analyze-card">
+        <div class="analyze-card-header"><h3>Sobre el add-in</h3></div>
+        <div class="analyze-card-body">
+          <div style="font-size:11px;color:var(--txt2);line-height:1.8;font-family:var(--mono);">
+            Versión: 1.0.0<br>
+            Modelo: Claude Sonnet via Azure AI Foundry<br>
+            API: Anthropic Messages API compatible<br>
+            Endpoint: <span style="color:var(--accent);">*.services.ai.azure.com/anthropic</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-danger btn-full" style="margin-top:4px;" onclick="resetConfig()">
+        🗑 Restablecer y cerrar sesión
+      </button>
+    </div>
+
+  </div><!-- /main-view -->
+
+  <!-- ═══════ STATUS BAR ═══════ -->
+  <div id="status-bar">
+    <div id="status-dot"></div>
+    <span id="status-text">Sin configurar</span>
+    <button id="clear-btn" onclick="clearChat()" title="Limpiar historial">Limpiar chat</button>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+'use strict';
+
+// ════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════
+let config = {
+  resource:   '',
+  apiKey:     '',
+  deployment: 'claude-sonnet-4-6',
+  lang:       'es',
+  autocontext: true,
+  extended:    false,
+  creative:    false
+};
+
+let chatHistory = [];   // {role, content}
+let currentSelection = null;  // captured cell data
+let contextIncluded = false;
+let isLoading = false;
+
+const STORAGE_KEY = 'sonnet_excel_config_v1';
+
+// ════════════════════════════════════════════════
+//  OFFICE INIT
+// ════════════════════════════════════════════════
+Office.onReady(function(info) {
+  if (info.host === Office.HostType.Excel) {
+    loadConfig();
+    updateUI();
+    // Listen for selection changes
+    Excel.run(async (ctx) => {
+      ctx.workbook.onSelectionChanged.add(() => {
+        if (config.autocontext) updateSelectionInfo();
+      });
+      await ctx.sync();
+    }).catch(() => {});
+  }
+});
+
+// ════════════════════════════════════════════════
+//  CONFIG
+// ════════════════════════════════════════════════
+function loadConfig() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      config = { ...config, ...JSON.parse(stored) };
+    }
+  } catch(e) {}
+}
+
+function saveConfig() {
+  config.resource   = document.getElementById('inp-resource').value.trim();
+  config.apiKey     = document.getElementById('inp-apikey').value.trim();
+  config.deployment = document.getElementById('inp-deployment').value.trim() || 'claude-sonnet-4-6';
+  config.lang       = document.getElementById('inp-lang').value;
+
+  if (!config.resource || !config.apiKey) {
+    setStatus('⚠ Completa Resource Name y API Key', 'error');
+    return;
+  }
+
+  persist();
+  updateUI();
+  setStatus('Conectado a Azure AI Foundry ✓', 'connected');
+}
+
+function updateConfig() {
+  config.resource   = document.getElementById('s-resource').value.trim();
+  config.apiKey     = document.getElementById('s-apikey').value.trim();
+  config.deployment = document.getElementById('s-deployment').value.trim() || 'claude-sonnet-4-6';
+  config.lang       = document.getElementById('s-lang').value;
+  persist();
+  setStatus('Configuración actualizada ✓', 'connected');
+}
+
+function persist() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch(e) {}
+}
+
+function resetConfig() {
+  if (!confirm('¿Seguro que quieres borrar la configuración?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  config = { resource:'', apiKey:'', deployment:'claude-sonnet-4-6', lang:'es', autocontext:true, extended:false, creative:false };
+  chatHistory = [];
+  updateUI();
+}
+
+function toggleSetting(key) {
+  config[key] = !config[key];
+  const el = document.getElementById('toggle-' + key);
+  if (el) el.classList.toggle('on', config[key]);
+  persist();
+}
+
+// ════════════════════════════════════════════════
+//  UI STATE
+// ════════════════════════════════════════════════
+function updateUI() {
+  const hasConfig = config.resource && config.apiKey;
+  document.getElementById('setup-panel').style.display = hasConfig ? 'none' : 'flex';
+  document.getElementById('main-view').style.display   = hasConfig ? 'flex' : 'none';
+
+  if (hasConfig) {
+    setStatus('Conectado · ' + config.resource, 'connected');
+    // Populate settings tab
+    document.getElementById('s-resource').value   = config.resource;
+    document.getElementById('s-apikey').value     = config.apiKey;
+    document.getElementById('s-deployment').value = config.deployment;
+    document.getElementById('s-lang').value       = config.lang;
+    // Toggles
+    ['autocontext','extended','creative'].forEach(k => {
+      const el = document.getElementById('toggle-' + k);
+      if (el) el.classList.toggle('on', config[k]);
+    });
+    updateSelectionInfo();
+  } else {
+    setStatus('Sin configurar', '');
+    // Pre-fill setup fields if partial data
+    document.getElementById('inp-resource').value   = config.resource || '';
+    document.getElementById('inp-apikey').value     = config.apiKey   || '';
+    document.getElementById('inp-deployment').value = config.deployment || 'claude-sonnet-4-6';
+    document.getElementById('inp-lang').value       = config.lang || 'es';
+  }
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    const names = ['chat', 'analyze', 'formulas', 'settings'];
+    t.classList.toggle('active', names[i] === name);
+  });
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  const ids = {
+    chat:     'chat-tab-content',
+    analyze:  'analyze-tab',
+    formulas: 'formulas-tab',
+    settings: 'settings-tab'
+  };
+  const el = document.getElementById(ids[name]);
+  if (el) el.classList.add('active');
+  if (name === 'analyze') updateSelectionInfo();
+}
+
+function setStatus(text, state) {
+  const dot  = document.getElementById('status-dot');
+  const span = document.getElementById('status-text');
+  dot.className = state || '';
+  span.textContent = text;
+}
+
+// ════════════════════════════════════════════════
+//  EXCEL HELPERS
+// ════════════════════════════════════════════════
+async function getSelectionData() {
+  try {
+    return await Excel.run(async (ctx) => {
+      const range = ctx.workbook.getSelectedRange();
+      range.load(['address','values','formulas','numberFormat','rowCount','columnCount','cellCount']);
+      await ctx.sync();
+
+      // Try to get column headers if we're inside a table
+      const vals = range.values;
+      const rows = range.rowCount;
+      const cols = range.columnCount;
+
+      return {
+        address:  range.address,
+        rows,
+        cols,
+        values:   vals,
+        formulas: range.formulas,
+        cellCount: range.cellCount,
+        preview:  formatPreviewTable(vals, rows, cols)
+      };
+    });
+  } catch(e) {
+    return null;
+  }
+}
+
+function formatPreviewTable(vals, rows, cols) {
+  if (!vals || rows === 0) return '(sin datos)';
+  const maxRows = Math.min(rows, 20);
+  const maxCols = Math.min(cols, 10);
+  let out = '';
+  for (let r = 0; r < maxRows; r++) {
+    const row = [];
+    for (let c = 0; c < maxCols; c++) {
+      const v = vals[r][c];
+      row.push(v === null || v === '' ? '(vacío)' : String(v).substring(0, 30));
+    }
+    out += row.join('\t') + '\n';
+  }
+  if (rows > maxRows) out += `... y ${rows - maxRows} filas más\n`;
+  if (cols > maxCols) out += `... y ${cols - maxCols} columnas más`;
+  return out;
+}
+
+async function updateSelectionInfo() {
+  const data = await getSelectionData();
+  currentSelection = data;
+  const el = document.getElementById('selection-info');
+  if (!el) return;
+  if (!data) {
+    el.innerHTML = '<span style="color:var(--txt3)">No se pudo leer la selección.</span>';
+    return;
+  }
+  el.innerHTML = `
+    <span>Rango: <span class="sel-highlight">${data.address}</span></span>
+    · <span class="sel-highlight">${data.rows} filas × ${data.cols} columnas</span>
+    · <span>${data.cellCount} celdas</span>
+    <div style="margin-top:8px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:8px;overflow-x:auto;">
+      <pre style="font-family:var(--mono);font-size:10px;color:var(--txt2);white-space:pre;margin:0;">${escapeHtml(data.preview)}</pre>
+    </div>
+  `;
+}
+
+async function captureSelectionForChat() {
+  const data = await getSelectionData();
+  if (!data) {
+    addSystemMsg('⚠ No se pudo capturar la selección. Asegúrate de tener celdas seleccionadas en Excel.');
+    return;
+  }
+  currentSelection = data;
+  contextIncluded = true;
+  const ind = document.getElementById('context-indicator');
+  ind.classList.add('visible');
+  document.getElementById('ctx-text').textContent = `${data.address} (${data.rows}×${data.cols}) incluido`;
+  addSystemMsg(`📋 Selección capturada: ${data.address} — ${data.rows} filas × ${data.cols} columnas`);
+}
+
+function clearContext() {
+  contextIncluded = false;
+  document.getElementById('context-indicator').classList.remove('visible');
+}
+
+async function insertFormula() {
+  const formulaEl = document.getElementById('formula-result');
+  if (formulaEl.classList.contains('empty')) return;
+  const formula = formulaEl.textContent.trim();
+  if (!formula) return;
+
+  try {
+    await Excel.run(async (ctx) => {
+      const range = ctx.workbook.getSelectedRange();
+      range.load('cellCount');
+      await ctx.sync();
+      range.values = [[formula]];
+      await ctx.sync();
+    });
+    setStatus('Fórmula insertada ✓', 'connected');
+  } catch(e) {
+    setStatus('Error al insertar: ' + e.message, 'error');
+  }
+}
+
+// ════════════════════════════════════════════════
+//  AZURE AI FOUNDRY API CALL
+// ════════════════════════════════════════════════
+async function callClaude(messages, systemPrompt) {
+  if (!config.resource || !config.apiKey) throw new Error('Sin configurar');
+
+  const endpoint = `https://${config.resource}.services.ai.azure.com/anthropic/v1/messages`;
+  const maxTokens = config.extended ? 4096 : 2048;
+  const temperature = config.creative ? 0.9 : 0.5;
+
+  const body = {
+    model:      config.deployment,
+    max_tokens: maxTokens,
+    temperature,
+    system: systemPrompt || buildSystemPrompt(),
+    messages
+  };
+
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type':    'application/json',
+      'x-api-key':       config.apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!resp.ok) {
+    const errBody = await resp.text();
+    let msg = `HTTP ${resp.status}`;
+    try {
+      const j = JSON.parse(errBody);
+      msg = j.error?.message || j.message || msg;
+    } catch(_) {}
+    throw new Error(msg);
+  }
+
+  const data = await resp.json();
+  const text = data.content?.map(b => b.text || '').join('') || '';
+  return text;
+}
+
+function buildSystemPrompt() {
+  const langInstructions = {
+    es: 'Responde siempre en español.',
+    en: 'Always respond in English.',
+    fr: 'Réponds toujours en français.',
+    de: 'Antworte immer auf Deutsch.',
+    pt: 'Responda sempre em português.'
+  };
+  return `Eres Sonnet AI, un asistente especializado en Microsoft Excel y análisis de datos, powered by Claude Sonnet via Azure AI Foundry.
+
+${langInstructions[config.lang] || langInstructions.es}
+
+CAPACIDADES PRINCIPALES:
+- Análisis profundo de datos en hojas de cálculo
+- Generación de fórmulas Excel avanzadas (XLOOKUP, SUMIFS, LAMBDA, LET, FILTER, dinámicas de matrices)
+- Depuración de errores (#REF!, #VALUE!, #DIV/0!, #NAME?, etc.)
+- Optimización de modelos financieros y tablas dinámicas
+- Sugerencia de visualizaciones y gráficos apropiados
+- Automatización con Power Query y consideraciones de VBA
+
+FORMATO:
+- Sé conciso y práctico. Excel es el contexto, no teoría general.
+- Cuando generes fórmulas, muéstralas entre ===FORMULA=== markers para facilitar la detección.
+- Usa ejemplos concretos cuando sea útil.
+- Si el usuario proporciona datos de celdas, úsalos directamente.`;
+}
+
+// ════════════════════════════════════════════════
+//  CHAT
+// ════════════════════════════════════════════════
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  let text = input.value.trim();
+  if (!text || isLoading) return;
+
+  // Auto-capture selection if enabled
+  let contextStr = '';
+  if (config.autocontext && !contextIncluded) {
+    const data = await getSelectionData();
+    if (data && data.cellCount > 1) {
+      contextStr = `\n\n[DATOS DE EXCEL - Rango ${data.address} (${data.rows}×${data.cols})]:\n${data.preview}`;
+    }
+  } else if (contextIncluded && currentSelection) {
+    contextStr = `\n\n[DATOS DE EXCEL - Rango ${currentSelection.address} (${currentSelection.rows}×${currentSelection.cols})]:\n${currentSelection.preview}`;
+    clearContext();
+  }
+
+  const userContent = text + contextStr;
+  input.value = '';
+  input.style.height = 'auto';
+
+  addUserMsg(text);
+  chatHistory.push({ role: 'user', content: userContent });
+
+  const typingEl = addTypingIndicator();
+  isLoading = true;
+  setLoading(true);
+
+  try {
+    const reply = await callClaude(chatHistory);
+    chatHistory.push({ role: 'assistant', content: reply });
+    typingEl.remove();
+    addAssistantMsg(reply);
+    setStatus('Listo ✓', 'connected');
+  } catch(e) {
+    typingEl.remove();
+    const errMsg = `⚠ Error: ${e.message}`;
+    addSystemMsg(errMsg);
+    chatHistory.push({ role: 'assistant', content: errMsg });
+    setStatus('Error: ' + e.message, 'error');
+  } finally {
+    isLoading = false;
+    setLoading(false);
+  }
+}
+
+function setLoading(on) {
+  document.getElementById('send-btn').disabled = on;
+  document.getElementById('status-dot').className = on ? 'loading' : 'connected';
+}
+
+function handleInputKey(e) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function addUserMsg(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg user';
+  div.innerHTML = `
+    <div class="msg-role"><span class="role-dot"></span>TÚ</div>
+    <div class="msg-bubble">${escapeHtml(text)}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addAssistantMsg(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant';
+
+  // Parse basic markdown-like formatting
+  const html = parseMarkdown(text);
+
+  // Check if there's a formula to extract
+  let formulaBtn = '';
+  const fMatch = text.match(/===FORMULA===\s*([\s\S]*?)\s*===FORMULA===/);
+  if (fMatch) {
+    const f = fMatch[1].trim();
+    formulaBtn = `<button class="msg-btn accent" onclick="insertFormulaFromMsg('${escapeAttr(f)}')">⚡ Insertar fórmula</button>`;
+  }
+
+  div.innerHTML = `
+    <div class="msg-role"><span class="role-dot"></span>SONNET AI</div>
+    <div class="msg-bubble">${html}</div>
+    <div class="msg-actions">
+      <button class="msg-btn" onclick="copyText(this.parentElement.previousElementSibling.textContent)">Copiar</button>
+      ${formulaBtn}
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addSystemMsg(text) {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg system-msg';
+  div.innerHTML = `<div class="msg-role">SISTEMA</div><div class="msg-bubble" style="font-size:11px;color:var(--txt2);background:transparent;border-style:dashed;">${escapeHtml(text)}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function addTypingIndicator() {
+  const msgs = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg assistant typing-indicator';
+  div.innerHTML = `<div class="msg-role"><span class="role-dot"></span>SONNET AI</div><div class="msg-bubble"><div class="dots"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function clearChat() {
+  if (!confirm('¿Limpiar el historial de chat?')) return;
+  chatHistory = [];
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML = '';
+  addSystemMsg('Historial limpiado.');
+}
+
+function quickAction(text) {
+  const input = document.getElementById('chat-input');
+  input.value = text;
+  autoResize(input);
+  input.focus();
+}
+
+// ════════════════════════════════════════════════
+//  ANALYZE TAB
+// ════════════════════════════════════════════════
+async function refreshSelection() {
+  await updateSelectionInfo();
+}
+
+async function analyzeAction(type) {
+  if (isLoading) return;
+  const data = currentSelection || await getSelectionData();
+  if (!data) {
+    setOutputAnalyze('⚠ Selecciona un rango en Excel primero, luego pulsa "Refrescar".');
+    return;
+  }
+
+  const prompts = {
+    summary:  `Analiza estos datos de Excel y dame un resumen estadístico completo: totales, promedios, máx, mín, distribución, tipos de datos presentes.\n\nDATOS (${data.address}):\n${data.preview}`,
+    trends:   `Identifica tendencias, patrones, variaciones y cambios significativos en estos datos. Sé específico con números.\n\nDATOS (${data.address}):\n${data.preview}`,
+    outliers: `Detecta valores atípicos (outliers), anomalías, celdas vacías problemáticas o datos inconsistentes en este rango. Indica fila/columna específica cuando sea posible.\n\nDATOS (${data.address}):\n${data.preview}`,
+    quality:  `Evalúa la calidad de estos datos: duplicados, valores faltantes, formatos inconsistentes, posibles errores de entrada. Da una puntuación del 1-10 y recomendaciones.\n\nDATOS (${data.address}):\n${data.preview}`,
+    chart:    `¿Qué tipo de gráfico es más adecuado para visualizar estos datos y por qué? Indica el tipo exacto de gráfico de Excel (columnas agrupadas, líneas, dispersión, etc.) y cómo configurarlo.\n\nDATOS (${data.address}):\n${data.preview}`,
+    formula:  `Sugiere 2-3 fórmulas Excel útiles para analizar o procesar este tipo de datos. Explica qué hace cada una y muéstralas entre ===FORMULA=== markers.\n\nDATOS (${data.address}):\n${data.preview}`
+  };
+
+  setOutputAnalyze('⏳ Analizando...');
+  isLoading = true;
+  setStatus('Analizando...', 'loading');
+
+  try {
+    const result = await callClaude([{ role: 'user', content: prompts[type] }]);
+    setOutputAnalyze(result);
+    setStatus('Análisis completo ✓', 'connected');
+  } catch(e) {
+    setOutputAnalyze('⚠ Error: ' + e.message);
+    setStatus('Error', 'error');
+  } finally {
+    isLoading = false;
+  }
+}
+
+function setOutputAnalyze(text) {
+  const el = document.getElementById('analyze-output');
+  el.classList.remove('empty');
+  el.textContent = text;
+}
+
+function copyAnalyzeOutput() {
+  const text = document.getElementById('analyze-output').textContent;
+  copyToClipboard(text);
+}
+
+// ════════════════════════════════════════════════
+//  FORMULAS TAB
+// ════════════════════════════════════════════════
+async function generateFormula() {
+  const desc = document.getElementById('formula-desc').value.trim();
+  const range = document.getElementById('formula-range').value.trim();
+
+  if (!desc) { alert('Describe qué quieres calcular.'); return; }
+
+  let contextStr = '';
+  if (range) {
+    contextStr = `\nEl rango de referencia es: ${range}`;
+  } else if (currentSelection) {
+    contextStr = `\nEl rango de referencia disponible es: ${currentSelection.address}`;
+  }
+
+  const prompt = `Genera una fórmula Excel para: ${desc}${contextStr}
+
+Requisitos:
+- Usa funciones modernas de Excel cuando sea posible (XLOOKUP, LET, LAMBDA, FILTER, SORT, UNIQUE, etc.)
+- La fórmula debe funcionar en Excel 365
+- Muestra SOLO la fórmula entre ===FORMULA=== markers
+- Después explica brevemente qué hace cada parte importante
+
+===FORMULA===
+(aquí va la fórmula)
+===FORMULA===`;
+
+  document.getElementById('formula-result').textContent = '⏳ Generando...';
+  document.getElementById('formula-result').classList.remove('empty');
+  isLoading = true;
+  setStatus('Generando fórmula...', 'loading');
+
+  try {
+    const result = await callClaude([{ role: 'user', content: prompt }]);
+    // Extract formula if marker found
+    const match = result.match(/===FORMULA===\s*([\s\S]*?)\s*===FORMULA===/);
+    const formula = match ? match[1].trim() : result;
+    document.getElementById('formula-result').textContent = formula;
+    setStatus('Fórmula generada ✓', 'connected');
+    // Also show explanation in the chat
+    chatHistory.push({ role: 'user', content: 'Genera fórmula: ' + desc });
+    chatHistory.push({ role: 'assistant', content: result });
+  } catch(e) {
+    document.getElementById('formula-result').textContent = '⚠ ' + e.message;
+    setStatus('Error', 'error');
+  } finally {
+    isLoading = false;
+  }
+}
+
+async function debugFormula() {
+  const formula = document.getElementById('debug-formula').value.trim();
+  if (!formula) { alert('Pega tu fórmula primero.'); return; }
+
+  const prompt = `Analiza esta fórmula Excel que tiene un error o comportamiento inesperado:
+
+${formula}
+
+1. Identifica qué está mal o podría mejorar
+2. Explica el error exacto
+3. Proporciona la versión corregida entre ===FORMULA=== markers
+4. Explica los cambios realizados`;
+
+  const out = document.getElementById('debug-output');
+  out.textContent = '⏳ Analizando...';
+  out.classList.remove('empty');
+  isLoading = true;
+  setStatus('Depurando...', 'loading');
+
+  try {
+    const result = await callClaude([{ role: 'user', content: prompt }]);
+    out.textContent = result;
+    setStatus('Análisis completo ✓', 'connected');
+  } catch(e) {
+    out.textContent = '⚠ ' + e.message;
+    setStatus('Error', 'error');
+  } finally {
+    isLoading = false;
+  }
+}
+
+function copyFormula() {
+  const text = document.getElementById('formula-result').textContent;
+  copyToClipboard(text);
+}
+
+async function insertFormulaFromMsg(formula) {
+  try {
+    await Excel.run(async (ctx) => {
+      const range = ctx.workbook.getSelectedRange();
+      range.values = [[formula]];
+      await ctx.sync();
+    });
+    setStatus('Fórmula insertada ✓', 'connected');
+  } catch(e) {
+    setStatus('Error: ' + e.message, 'error');
+  }
+}
+
+// ════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;');
+}
+function escapeAttr(s) {
+  return String(s).replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+function parseMarkdown(text) {
+  // Very basic markdown: bold, inline code, code blocks
+  return escapeHtml(text)
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/===FORMULA===([\s\S]*?)===FORMULA===/g,
+      '<pre style="color:var(--success)"><code>$1</code></pre>');
+}
+
+function copyText(text) { copyToClipboard(text); }
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    setStatus('Copiado al portapapeles ✓', 'connected');
+  }).catch(() => {
+    // Fallback
+    const el = document.createElement('textarea');
+    el.value = text;
+    el.style.position = 'fixed';
+    el.style.opacity = '0';
+    document.body.appendChild(el);
+    el.select();
+    document.execCommand('copy');
+    el.remove();
+    setStatus('Copiado ✓', 'connected');
+  });
+}
+</script>
+</body>
+</html>
