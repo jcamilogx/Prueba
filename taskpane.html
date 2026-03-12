@@ -1,1285 +1,1427 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Sonnet AI</title>
-<script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
-<style>
-/* ── RESET ── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;font-size:13px;line-height:1.5}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Claude AI para Excel</title>
 
-/* ── VARIABLES ── */
-:root{
-  --bg:#0f1117;
-  --s1:#171921;
-  --s2:#1e2130;
-  --b1:rgba(255,255,255,0.08);
-  --b2:rgba(255,255,255,0.15);
-  --ac:#6c8aff;
-  --ac2:#a78bfa;
-  --ok:#34d399;
-  --er:#f87171;
-  --t1:#e8eaf2;
-  --t2:#8b93b0;
-  --t3:#4a5270;
-  --r:8px;
-  --r2:5px;
-}
+  <!-- Office.js -->
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
 
-/* ── SCROLLBAR ── */
-::-webkit-scrollbar{width:3px}
-::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px}
+  <style>
+    :root {
+      --primary: #d97706;
+      --primary-hover: #b45309;
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface-2: #252525;
+      --surface-3: #333;
+      --border: #3a3a3a;
+      --text: #e5e5e5;
+      --text-muted: #999;
+      --text-dim: #666;
+      --success: #22c55e;
+      --error: #ef4444;
+      --info: #3b82f6;
+      --user-bg: #2a2215;
+      --assistant-bg: #1a1a1a;
+      --code-bg: #0d0d0d;
+      --scrollbar: #444;
+    }
 
-/* ── LAYOUT ── */
-body{
-  background:var(--bg);
-  color:var(--t1);
-  font-family:system-ui,-apple-system,sans-serif;
-  display:flex;
-  flex-direction:column;
-  height:100vh;
-}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
-/* ── HEADER ── */
-#hdr{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:10px 12px;
-  background:var(--s1);
-  border-bottom:1px solid var(--b1);
-  flex-shrink:0;
-}
-.logo{
-  width:26px;height:26px;
-  background:linear-gradient(135deg,var(--ac),var(--ac2));
-  border-radius:6px;
-  display:flex;align-items:center;justify-content:center;
-  font-size:14px;flex-shrink:0;
-}
-#hdr-info{flex:1;min-width:0}
-#hdr-info h1{font-size:13px;font-weight:700;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#hdr-info p{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#gear-btn{
-  background:none;border:none;color:var(--t3);
-  cursor:pointer;font-size:16px;padding:2px;
-  flex-shrink:0;line-height:1;
-}
-#gear-btn:hover{color:var(--t1)}
+    body {
+      font-family: 'Segoe UI', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      font-size: 13px;
+      line-height: 1.5;
+    }
 
-/* ── TABS ── */
-#tabs{
-  display:flex;
-  background:var(--s1);
-  border-bottom:1px solid var(--b1);
-  flex-shrink:0;
-}
-.tab{
-  flex:1;padding:7px 4px;
-  font-size:10px;font-weight:600;
-  text-align:center;cursor:pointer;
-  color:var(--t3);
-  border-bottom:2px solid transparent;
-  transition:all .15s;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.tab:hover{color:var(--t2)}
-.tab.on{color:var(--ac);border-bottom-color:var(--ac)}
+    /* ── HEADER ── */
+    .header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 8px; }
+    .header-logo {
+      width: 22px; height: 22px;
+      background: var(--primary);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 12px; color: #000;
+    }
+    .header-title { font-weight: 600; font-size: 14px; }
+    .header-actions { display: flex; gap: 4px; }
 
-/* ── SCREENS ── */
-.screen{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden}
-.screen.on{display:flex}
+    .icon-btn {
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; padding: 5px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+    .icon-btn svg { width: 16px; height: 16px; }
 
-/* ══════════════════════════════
-   SETUP SCREEN
-══════════════════════════════ */
-#setup{overflow-y:auto;padding:14px 12px;gap:14px}
+    /* ── STATUS BAR ── */
+    .status-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 6px 14px;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--text-dim);
+      flex-shrink: 0;
+    }
+    .status-dot.connected { background: var(--success); }
+    .status-dot.error { background: var(--error); }
+    .status-text { color: var(--text-muted); }
 
-.setup-hero{
-  background:linear-gradient(135deg,rgba(108,138,255,.1),rgba(167,139,250,.07));
-  border:1px solid rgba(108,138,255,.2);
-  border-radius:var(--r);
-  padding:14px 12px;
-  text-align:center;
-}
-.setup-hero h2{font-size:15px;font-weight:700;margin-bottom:4px}
-.setup-hero p{font-size:11px;color:var(--t2);line-height:1.5}
+    /* ── CONFIG PANEL ── */
+    .config-panel {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .3s ease;
+    }
+    .config-panel.open { max-height: 500px; }
+    .config-inner { padding: 12px 14px; }
+    .config-inner h3 {
+      font-size: 12px; font-weight: 600;
+      margin-bottom: 10px; color: var(--primary);
+      text-transform: uppercase; letter-spacing: .5px;
+    }
+    .field { margin-bottom: 10px; }
+    .field label {
+      display: block; font-size: 11px;
+      color: var(--text-muted); margin-bottom: 3px;
+      font-weight: 500;
+    }
+    .field input, .field select {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      transition: border-color .15s;
+    }
+    .field input:focus, .field select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    .field input::placeholder { color: var(--text-dim); }
+    .field .hint { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
 
-.field{display:flex;flex-direction:column;gap:5px}
-.field label{
-  font-size:10px;font-weight:700;
-  text-transform:uppercase;letter-spacing:.6px;
-  color:var(--t3);
-}
-.field input,.field select{
-  width:100%;
-  background:var(--s2);
-  border:1px solid var(--b2);
-  border-radius:var(--r2);
-  padding:9px 10px;
-  color:var(--t1);
-  font-size:12px;
-  outline:none;
-  transition:border-color .2s;
-  font-family:inherit;
-}
-.field input:focus,.field select:focus{
-  border-color:var(--ac);
-  box-shadow:0 0 0 2px rgba(108,138,255,.15);
-}
-.field input::placeholder{color:var(--t3)}
-.field select option{background:var(--s2)}
-.hint{font-size:10px;color:var(--t3);line-height:1.5}
-.hint code{color:var(--ac);font-family:monospace}
+    .btn-save {
+      background: var(--primary);
+      color: #000;
+      border: none;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+      width: 100%;
+    }
+    .btn-save:hover { background: var(--primary-hover); }
 
-/* ══════════════════════════════
-   CHAT SCREEN
-══════════════════════════════ */
-#msgs{
-  flex:1;overflow-y:auto;
-  padding:10px 10px 6px;
-  display:flex;flex-direction:column;gap:10px;
-}
+    /* ── CHAT AREA ── */
+    .chat-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .chat-area::-webkit-scrollbar { width: 5px; }
+    .chat-area::-webkit-scrollbar-track { background: transparent; }
+    .chat-area::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
 
-.msg{display:flex;flex-direction:column;gap:4px;animation:fu .2s ease}
-@keyframes fu{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+    .welcome {
+      text-align: center;
+      padding: 30px 10px;
+      color: var(--text-muted);
+    }
+    .welcome-icon {
+      width: 48px; height: 48px; margin: 0 auto 12px;
+      background: var(--surface-2);
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .welcome h2 { font-size: 15px; color: var(--text); margin-bottom: 6px; }
+    .welcome p { font-size: 12px; line-height: 1.6; }
 
-.msg-label{
-  font-size:9px;font-weight:700;
-  letter-spacing:.7px;text-transform:uppercase;
-  color:var(--t3);
-}
-.msg.me .msg-label{color:var(--ac);text-align:right}
-.msg.ai .msg-label{color:var(--ok)}
+    .quick-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 14px;
+    }
+    .quick-btn {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      cursor: pointer;
+      text-align: left;
+      transition: all .15s;
+      line-height: 1.4;
+    }
+    .quick-btn:hover {
+      border-color: var(--primary);
+      color: var(--text);
+      background: var(--surface-3);
+    }
+    .quick-btn strong { display: block; color: var(--text); font-size: 11px; }
 
-.bubble{
-  background:var(--s1);
-  border:1px solid var(--b1);
-  border-radius:4px 10px 10px 10px;
-  padding:9px 11px;
-  font-size:12px;
-  line-height:1.6;
-  color:var(--t1);
-  word-break:break-word;
-  white-space:pre-wrap;
-}
-.msg.me .bubble{
-  background:rgba(108,138,255,.1);
-  border-color:rgba(108,138,255,.2);
-  border-radius:10px 4px 10px 10px;
-  align-self:flex-end;
-  max-width:90%;
-}
-.msg.me{align-items:flex-end}
-.msg.ai{align-items:flex-start}
-.msg.sys .bubble{
-  background:transparent;
-  border-style:dashed;
-  font-size:11px;
-  color:var(--t2);
-}
+    /* ── MESSAGES ── */
+    .message {
+      padding: 10px 12px;
+      border-radius: 10px;
+      max-width: 100%;
+      word-wrap: break-word;
+      animation: fadeIn .2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
 
-/* code in bubbles */
-.bubble code{
-  background:rgba(255,255,255,.07);
-  border:1px solid var(--b1);
-  border-radius:3px;
-  padding:1px 4px;
-  font-family:monospace;
-  font-size:11px;
-}
-.bubble pre{
-  background:rgba(0,0,0,.4);
-  border:1px solid var(--b1);
-  border-radius:var(--r2);
-  padding:8px 10px;
-  margin-top:6px;
-  overflow-x:auto;
-  font-size:11px;
-  font-family:monospace;
-  line-height:1.5;
-  white-space:pre;
-}
-.bubble pre code{background:none;border:none;padding:0}
+    .message.user {
+      background: var(--user-bg);
+      border: 1px solid #3d3018;
+      align-self: flex-end;
+    }
+    .message.assistant {
+      background: var(--assistant-bg);
+      border: 1px solid var(--border);
+    }
+    .message.system {
+      background: transparent;
+      text-align: center;
+      font-size: 11px;
+      color: var(--text-dim);
+      padding: 4px;
+    }
 
-/* copy btn on ai messages */
-.copy-btn{
-  font-size:9px;color:var(--t3);
-  background:none;border:none;cursor:pointer;
-  padding:2px 0;align-self:flex-start;
-  transition:color .15s;
-}
-.copy-btn:hover{color:var(--ac)}
+    .msg-header {
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: 4px; font-size: 11px; font-weight: 600;
+    }
+    .msg-header .role { color: var(--primary); }
+    .msg-header .time { color: var(--text-dim); font-weight: 400; margin-left: auto; }
 
-/* typing dots */
-.dots{display:flex;gap:4px;align-items:center;padding:2px 0}
-.dots span{
-  width:5px;height:5px;background:var(--t3);
-  border-radius:50%;animation:bounce 1.1s infinite;
-}
-.dots span:nth-child(2){animation-delay:.18s}
-.dots span:nth-child(3){animation-delay:.36s}
-@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-5px)}}
+    .msg-body { font-size: 13px; line-height: 1.6; }
+    .msg-body pre {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 8px 10px;
+      overflow-x: auto;
+      margin: 6px 0;
+      font-size: 11px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+    .msg-body code {
+      background: var(--surface-2);
+      padding: 1px 4px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+    }
+    .msg-body pre code { background: none; padding: 0; }
 
-/* ── QUICK ACTIONS ── */
-#quick{
-  display:flex;flex-wrap:wrap;gap:4px;
-  padding:6px 10px;
-  border-top:1px solid var(--b1);
-  flex-shrink:0;
-}
-.qbtn{
-  font-size:10px;
-  background:var(--s2);border:1px solid var(--b1);
-  border-radius:20px;padding:4px 9px;
-  color:var(--t2);cursor:pointer;
-  transition:all .15s;white-space:nowrap;
-}
-.qbtn:hover{color:var(--ac);border-color:rgba(108,138,255,.4)}
+    .typing-indicator span {
+      display: inline-block;
+      width: 6px; height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      margin: 0 2px;
+      animation: bounce .6s infinite alternate;
+    }
+    .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+    .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+    @keyframes bounce { to { transform: translateY(-6px); opacity: .4; } }
 
-/* ── CONTEXT BAR ── */
-#ctx-bar{
-  display:none;
-  align-items:center;gap:6px;
-  padding:5px 10px;
-  background:rgba(108,138,255,.08);
-  border-top:1px solid rgba(108,138,255,.15);
-  font-size:10px;color:var(--ac);
-  flex-shrink:0;
-}
-#ctx-bar.on{display:flex}
-#ctx-x{margin-left:auto;cursor:pointer;color:var(--t3);font-size:12px}
-#ctx-x:hover{color:var(--er)}
+    /* ── CONTEXT BAR ── */
+    .context-bar {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      font-size: 11px;
+    }
+    .context-badge {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 2px 8px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      display: flex; align-items: center; gap: 4px;
+    }
+    .context-badge svg { width: 12px; height: 12px; }
 
-/* ── INPUT ROW ── */
-#input-area{
-  padding:8px 10px 10px;
-  border-top:1px solid var(--b1);
-  background:var(--s1);
-  flex-shrink:0;
-}
-#input-row{display:flex;gap:6px;align-items:flex-end}
-#chat-in{
-  flex:1;min-height:38px;max-height:100px;
-  background:var(--s2);
-  border:1px solid var(--b2);
-  border-radius:var(--r);
-  padding:9px 10px;
-  color:var(--t1);font-size:12px;
-  outline:none;resize:none;
-  font-family:inherit;
-  overflow-y:auto;
-  transition:border-color .2s;
-}
-#chat-in:focus{border-color:var(--ac);box-shadow:0 0 0 2px rgba(108,138,255,.12)}
-#chat-in::placeholder{color:var(--t3)}
-#send{
-  width:36px;height:36px;flex-shrink:0;
-  background:linear-gradient(135deg,var(--ac),var(--ac2));
-  border:none;border-radius:var(--r);
-  cursor:pointer;display:flex;align-items:center;justify-content:center;
-  transition:opacity .2s,transform .1s;
-}
-#send:hover{opacity:.85}
-#send:active{transform:scale(.94)}
-#send:disabled{opacity:.3;cursor:not-allowed}
-#send svg{width:15px;height:15px;fill:white}
+    /* ── INPUT AREA ── */
+    .input-area {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 10px 14px;
+      flex-shrink: 0;
+    }
+    .input-row { display: flex; gap: 6px; align-items: flex-end; }
+    .input-wrapper {
+      flex: 1;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0 10px;
+      transition: border-color .15s;
+    }
+    .input-wrapper:focus-within { border-color: var(--primary); }
+    .input-wrapper textarea {
+      width: 100%;
+      background: none;
+      border: none;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 9px 0;
+      resize: none;
+      max-height: 120px;
+      line-height: 1.5;
+    }
+    .input-wrapper textarea:focus { outline: none; }
+    .input-wrapper textarea::placeholder { color: var(--text-dim); }
 
-/* ══════════════════════════════
-   ANALYZE SCREEN
-══════════════════════════════ */
-#analyze{overflow-y:auto;padding:10px;gap:10px}
+    .send-btn {
+      background: var(--primary);
+      border: none;
+      color: #000;
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .send-btn:hover { background: var(--primary-hover); }
+    .send-btn:disabled { opacity: .3; cursor: not-allowed; }
+    .send-btn svg { width: 16px; height: 16px; }
 
-.card{
-  background:var(--s1);
-  border:1px solid var(--b1);
-  border-radius:var(--r);
-  overflow:hidden;
-}
-.card-hd{
-  display:flex;align-items:center;justify-content:space-between;
-  padding:9px 12px;
-  border-bottom:1px solid var(--b1);
-}
-.card-hd h3{font-size:12px;font-weight:600}
-.card-bd{padding:10px 12px}
+    .input-hint {
+      font-size: 10px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      text-align: center;
+    }
 
-#sel-info{font-size:11px;color:var(--t2);line-height:1.6}
-#sel-info .hl{color:var(--ac);font-weight:600}
-#sel-preview{
-  margin-top:8px;
-  background:var(--bg);
-  border:1px solid var(--b1);
-  border-radius:4px;
-  padding:6px 8px;
-  overflow-x:auto;
-  font-family:monospace;
-  font-size:10px;
-  color:var(--t2);
-  max-height:80px;
-  white-space:pre;
-}
-
-.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
-.act{
-  background:var(--s2);border:1px solid var(--b1);
-  border-radius:var(--r2);padding:9px 10px;
-  cursor:pointer;text-align:left;
-  transition:all .15s;
-  display:flex;flex-direction:column;gap:2px;
-}
-.act:hover{border-color:rgba(108,138,255,.4);background:rgba(108,138,255,.07)}
-.act-ico{font-size:15px}
-.act-tit{font-size:11px;font-weight:600}
-.act-dsc{font-size:10px;color:var(--t2)}
-
-#ana-out{
-  font-size:11px;color:var(--t1);
-  line-height:1.7;white-space:pre-wrap;
-  word-break:break-word;max-height:200px;
-  overflow-y:auto;
-}
-#ana-out.empty{color:var(--t3);font-style:italic}
-
-/* ══════════════════════════════
-   FORMULAS SCREEN
-══════════════════════════════ */
-#formulas{overflow-y:auto;padding:10px;gap:10px}
-
-textarea.fld{
-  width:100%;
-  background:var(--s2);border:1px solid var(--b2);
-  border-radius:var(--r2);padding:9px 10px;
-  color:var(--t1);font-size:12px;
-  outline:none;resize:none;
-  font-family:inherit;
-  transition:border-color .2s;
-}
-textarea.fld:focus{border-color:var(--ac);box-shadow:0 0 0 2px rgba(108,138,255,.12)}
-textarea.fld::placeholder{color:var(--t3)}
-
-#f-result{
-  font-family:monospace;font-size:12px;
-  color:var(--ok);line-height:1.6;
-  word-break:break-all;min-height:36px;
-}
-#f-result.empty{color:var(--t3);font-style:italic;font-family:inherit;font-size:11px}
-#dbg-out{font-size:11px;color:var(--t2);line-height:1.6;white-space:pre-wrap}
-#dbg-out.empty{color:var(--t3);font-style:italic}
-
-/* ══════════════════════════════
-   SETTINGS SCREEN
-══════════════════════════════ */
-#settings{overflow-y:auto;padding:10px;gap:10px}
-
-.s-row{
-  display:flex;align-items:center;
-  justify-content:space-between;
-  padding:8px 0;border-bottom:1px solid var(--b1);gap:8px;
-}
-.s-row:last-child{border:none}
-.s-lbl{font-size:12px}
-.s-dsc{font-size:10px;color:var(--t2);margin-top:1px}
-.tog{
-  width:32px;height:17px;
-  background:var(--s2);border:1px solid var(--b2);
-  border-radius:20px;cursor:pointer;
-  position:relative;transition:background .2s;flex-shrink:0;
-}
-.tog.on{background:var(--ac);border-color:var(--ac)}
-.tog::after{
-  content:'';position:absolute;
-  width:11px;height:11px;background:white;
-  border-radius:50%;top:2px;left:2px;
-  transition:transform .2s;
-}
-.tog.on::after{transform:translateX(15px)}
-
-/* ── BUTTONS ── */
-.btn{
-  display:flex;align-items:center;justify-content:center;gap:5px;
-  padding:9px 14px;border-radius:var(--r2);
-  font-size:12px;font-weight:600;
-  cursor:pointer;border:none;
-  font-family:inherit;transition:all .15s;
-  width:100%;
-}
-.btn-p{background:linear-gradient(135deg,var(--ac),var(--ac2));color:white}
-.btn-p:hover{opacity:.85}
-.btn-s{background:var(--s2);border:1px solid var(--b2);color:var(--t1)}
-.btn-s:hover{border-color:var(--ac);color:var(--ac)}
-.btn-d{background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.2);color:var(--er)}
-.btn-d:hover{background:rgba(248,113,113,.2)}
-.btn:disabled{opacity:.35;cursor:not-allowed}
-.btn-sm{width:auto;padding:5px 10px;font-size:10px}
-
-/* ── STATUS BAR ── */
-#sbar{
-  display:flex;align-items:center;gap:7px;
-  padding:5px 12px;
-  border-top:1px solid var(--b1);
-  background:var(--s1);flex-shrink:0;
-}
-#sdot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--t3);flex-shrink:0;
-}
-#sdot.ok{background:var(--ok);animation:p 2s infinite}
-#sdot.ld{background:var(--ac);animation:p .7s infinite}
-#sdot.er{background:var(--er)}
-@keyframes p{0%,100%{opacity:1}50%{opacity:.3}}
-#stxt{font-size:10px;color:var(--t2);flex:1;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#clr-btn{
-  font-size:10px;background:none;border:none;
-  color:var(--t3);cursor:pointer;padding:2px 5px;
-  border-radius:3px;flex-shrink:0;
-}
-#clr-btn:hover{color:var(--er)}
-
-/* ── UTILS ── */
-.fc{display:flex;flex-direction:column}
-.g6{gap:6px}.g10{gap:10px}.g12{gap:12px}
-.hidden{display:none!important}
-.row{display:flex;gap:6px}
-</style>
+    /* ── TOAST ── */
+    .toast-container {
+      position: fixed; top: 60px; right: 10px; z-index: 999;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .toast {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      animation: slideIn .2s ease;
+      max-width: 260px;
+    }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error { border-left: 3px solid var(--error); }
+    .toast.info { border-left: 3px solid var(--info); }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } }
+  </style>
 </head>
+
 <body>
 
-<!-- ═══ HEADER ═══ -->
-<div id="hdr">
-  <div class="logo">🤖</div>
-  <div id="hdr-info">
-    <h1>Sonnet AI · Excel</h1>
-    <p id="hdr-sub">Azure AI Foundry</p>
-  </div>
-  <button id="gear-btn" onclick="gotoSettings()" title="Configuración">⚙</button>
-</div>
-
-<!-- ═══ TABS (solo en main view) ═══ -->
-<div id="tabs" class="hidden">
-  <div class="tab on"  onclick="sw('chat')"     id="t-chat">💬 Chat</div>
-  <div class="tab"     onclick="sw('analyze')"  id="t-analyze">📊 Datos</div>
-  <div class="tab"     onclick="sw('formulas')" id="t-formulas">⚡ Fórmulas</div>
-</div>
-
-<!-- ══════════════════════
-     SETUP SCREEN
-══════════════════════ -->
-<div class="screen on fc g10" id="setup" style="overflow-y:auto;padding:12px">
-
-  <div class="setup-hero">
-    <h2>🚀 Configuración</h2>
-    <p>Conecta tu <strong>Claude Sonnet</strong> de Azure AI Foundry para usar el asistente en Excel.</p>
-  </div>
-
-  <div class="field">
-    <label>Resource Name de Azure</label>
-    <input type="text" id="i-res" placeholder="mi-recurso-ai"/>
-    <div class="hint">Solo el nombre, sin https:// ni .services.ai.azure.com<br>Ej: <code>my-company-foundry</code></div>
-  </div>
-
-  <div class="field">
-    <label>API Key</label>
-    <input type="password" id="i-key" placeholder="Pega tu clave aquí"/>
-    <div class="hint">Portal Azure → tu recurso → <strong>Claves y punto de conexión</strong></div>
-  </div>
-
-  <div class="field">
-    <label>Deployment Name</label>
-    <input type="text" id="i-dep" placeholder="claude-sonnet-4-6" value="claude-sonnet-4-6"/>
-    <div class="hint">Nombre exacto del deployment en Foundry</div>
-  </div>
-
-  <div class="field">
-    <label>Idioma de respuestas</label>
-    <select id="i-lang">
-      <option value="es">Español</option>
-      <option value="en">English</option>
-      <option value="pt">Português</option>
-      <option value="fr">Français</option>
-    </select>
-  </div>
-
-  <button class="btn btn-p" onclick="saveConfig()">✓ Guardar y conectar</button>
-
-  <div class="hint" style="text-align:center">
-    Tus credenciales se guardan solo en este dispositivo y se envían únicamente a tu endpoint de Azure.
-  </div>
-</div>
-
-<!-- ══════════════════════
-     CHAT SCREEN
-══════════════════════ -->
-<div class="screen fc" id="chat">
-
-  <div id="msgs"></div>
-
-  <div id="quick">
-    <span class="qbtn" onclick="qa('Explica esta hoja de cálculo')">🔍 Explicar</span>
-    <span class="qbtn" onclick="qa('Busca errores en la selección')">🐛 Errores</span>
-    <span class="qbtn" onclick="capSel()">📋 Capturar celdas</span>
-    <span class="qbtn" onclick="qa('Sugiere un gráfico para estos datos')">📈 Gráfico</span>
-  </div>
-
-  <div id="ctx-bar">
-    <span>📋</span>
-    <span id="ctx-txt">Selección incluida</span>
-    <span id="ctx-x" onclick="clearCtx()">✕</span>
-  </div>
-
-  <div id="input-area">
-    <div id="input-row">
-      <textarea id="chat-in"
-        placeholder="Pregunta sobre tus datos... (Ctrl+Enter para enviar)"
-        rows="1"
-        onkeydown="onKey(event)"
-        oninput="resize(this)"></textarea>
-      <button id="send" onclick="send()" title="Enviar">
-        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  <!-- ═══ HEADER ═══ -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-logo">C</div>
+      <span class="header-title">Claude AI</span>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="btnConfig" title="Configuración">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+      </button>
+      <button class="icon-btn" id="btnClear" title="Nueva conversación">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
       </button>
     </div>
   </div>
-</div>
 
-<!-- ══════════════════════
-     ANALYZE SCREEN
-══════════════════════ -->
-<div class="screen fc g10" id="analyze">
-
-  <div class="card">
-    <div class="card-hd">
-      <h3>Selección actual</h3>
-      <button class="btn btn-s btn-sm" onclick="refreshSel()">↻</button>
-    </div>
-    <div class="card-bd">
-      <div id="sel-info" class="empty" style="font-size:11px;color:var(--t3)">
-        Selecciona celdas en Excel y pulsa ↻
-      </div>
-      <div id="sel-preview" class="hidden"></div>
-    </div>
+  <!-- ═══ STATUS BAR ═══ -->
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Sin configurar</span>
   </div>
 
-  <div class="card">
-    <div class="card-hd"><h3>Análisis rápido</h3></div>
-    <div class="card-bd">
-      <div class="act-grid">
-        <button class="act" onclick="analyze('summary')">
-          <span class="act-ico">📋</span>
-          <span class="act-tit">Resumen</span>
-          <span class="act-dsc">Estadísticas</span>
-        </button>
-        <button class="act" onclick="analyze('trends')">
-          <span class="act-ico">📈</span>
-          <span class="act-tit">Tendencias</span>
-          <span class="act-dsc">Patrones</span>
-        </button>
-        <button class="act" onclick="analyze('outliers')">
-          <span class="act-ico">🎯</span>
-          <span class="act-tit">Outliers</span>
-          <span class="act-dsc">Anomalías</span>
-        </button>
-        <button class="act" onclick="analyze('quality')">
-          <span class="act-ico">✅</span>
-          <span class="act-tit">Calidad</span>
-          <span class="act-dsc">Errores/gaps</span>
-        </button>
-        <button class="act" onclick="analyze('chart')">
-          <span class="act-ico">🗂️</span>
-          <span class="act-tit">Gráfico</span>
-          <span class="act-dsc">Recomienda</span>
-        </button>
-        <button class="act" onclick="analyze('formula')">
-          <span class="act-ico">⚡</span>
-          <span class="act-tit">Fórmula</span>
-          <span class="act-dsc">Sugiere</span>
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div class="card" style="flex:1">
-    <div class="card-hd">
-      <h3>Resultado</h3>
-      <button class="btn btn-s btn-sm" onclick="copyTxt(document.getElementById('ana-out').textContent)">Copiar</button>
-    </div>
-    <div class="card-bd">
-      <div id="ana-out" class="empty">Los resultados aparecerán aquí...</div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════
-     FORMULAS SCREEN
-══════════════════════ -->
-<div class="screen fc g10" id="formulas">
-
-  <div class="card">
-    <div class="card-hd"><h3>⚡ Generador de fórmulas</h3></div>
-    <div class="card-bd fc g10">
+  <!-- ═══ CONFIG PANEL ═══ -->
+  <div class="config-panel" id="configPanel">
+    <div class="config-inner">
+      <h3>Conexión Azure Foundry</h3>
       <div class="field">
-        <label>¿Qué quieres calcular?</label>
-        <textarea class="fld" id="f-desc" rows="3"
-          placeholder="Ej: Suma de ventas del mes donde la región sea Norte, ignorando celdas vacías"></textarea>
-      </div>
-      <div class="field">
-        <label>Rango (opcional)</label>
-        <input type="text" id="f-range" placeholder="Ej: A1:D50"/>
-      </div>
-      <button class="btn btn-p" onclick="genFormula()">⚡ Generar fórmula</button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd">
-      <h3>Fórmula generada</h3>
-      <div class="row">
-        <button class="btn btn-s btn-sm" onclick="copyTxt(document.getElementById('f-result').textContent)">Copiar</button>
-        <button class="btn btn-s btn-sm" onclick="insertF()">→ Insertar</button>
-      </div>
-    </div>
-    <div class="card-bd">
-      <div id="f-result" class="empty">La fórmula aparecerá aquí...</div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-hd"><h3>🐛 Depurar fórmula</h3></div>
-    <div class="card-bd fc g10">
-      <input type="text" class="fld" style="padding:9px 10px;border-radius:5px;background:var(--s2);border:1px solid var(--b2);color:var(--t1);font-size:12px;outline:none;width:100%"
-        id="dbg-in" placeholder="Pega tu fórmula con error..."/>
-      <button class="btn btn-s" onclick="debugF()">🔍 Analizar y corregir</button>
-      <div id="dbg-out" class="empty"></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════
-     SETTINGS SCREEN
-══════════════════════ -->
-<div class="screen fc g10" id="settings">
-
-  <div class="card">
-    <div class="card-hd"><h3>Conexión Azure AI Foundry</h3></div>
-    <div class="card-bd fc g10">
-      <div class="field">
-        <label>Resource Name</label>
-        <input type="text" id="s-res" placeholder="mi-recurso-ai"/>
+        <label>Nombre del recurso Azure</label>
+        <input type="text" id="cfgResource" placeholder="mi-recurso-foundry" />
+        <div class="hint">Parte de: https://&lt;nombre&gt;.services.ai.azure.com</div>
       </div>
       <div class="field">
         <label>API Key</label>
-        <input type="password" id="s-key" placeholder="••••••••••••••••"/>
+        <input type="password" id="cfgApiKey" placeholder="Tu clave de API de Azure Foundry" />
       </div>
       <div class="field">
-        <label>Deployment Name</label>
-        <input type="text" id="s-dep"/>
-      </div>
-      <div class="field">
-        <label>Idioma</label>
-        <select id="s-lang">
-          <option value="es">Español</option>
-          <option value="en">English</option>
-          <option value="pt">Português</option>
-          <option value="fr">Français</option>
+        <label>Modelo (deployment name)</label>
+        <select id="cfgModel">
+          <option value="claude-sonnet-4-6">Claude Sonnet 4.6</option>
+          <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+          <option value="claude-opus-4-6">Claude Opus 4.6</option>
+          <option value="claude-opus-4-5">Claude Opus 4.5</option>
+          <option value="claude-haiku-4-5">Claude Haiku 4.5</option>
         </select>
+        <div class="hint">Debe coincidir con el nombre del deployment en Azure Foundry</div>
       </div>
-      <button class="btn btn-p" onclick="updateConfig()">✓ Actualizar</button>
+      <div class="field">
+        <label>Instrucción del sistema (opcional)</label>
+        <input type="text" id="cfgSystem" placeholder="Eres un experto en análisis de datos en Excel..." />
+      </div>
+      <button class="btn-save" id="btnSaveConfig">Guardar y conectar</button>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-hd"><h3>Preferencias</h3></div>
-    <div class="card-bd">
-      <div class="s-row">
-        <div>
-          <div class="s-lbl">Contexto automático</div>
-          <div class="s-dsc">Incluye celdas seleccionadas al chatear</div>
-        </div>
-        <div class="tog on" id="tog-auto" onclick="togSet('auto')"></div>
-      </div>
-      <div class="s-row">
-        <div>
-          <div class="s-lbl">Respuestas extendidas</div>
-          <div class="s-dsc">Respuestas más largas y detalladas</div>
-        </div>
-        <div class="tog" id="tog-ext" onclick="togSet('ext')"></div>
+  <!-- ═══ CHAT AREA ═══ -->
+  <div class="chat-area" id="chatArea">
+    <div class="welcome" id="welcomeScreen">
+      <div class="welcome-icon">🤖</div>
+      <h2>Claude AI para Excel</h2>
+      <p>Conectado a tu API corporativa de Azure Foundry.<br />
+         Puedo leer y modificar todo tu libro de Excel.</p>
+      <div class="quick-actions">
+        <button class="quick-btn" data-prompt="Resume el contenido de todas las hojas de este libro">
+          <strong>📊 Resumir libro</strong>
+          Lee todas las hojas y genera un resumen
+        </button>
+        <button class="quick-btn" data-prompt="Analiza los datos de la hoja activa y sugiere mejoras en la estructura">
+          <strong>🔍 Analizar datos</strong>
+          Examina la hoja activa
+        </button>
+        <button class="quick-btn" data-prompt="Crea una nueva hoja con un dashboard resumen de los datos principales de este libro">
+          <strong>📈 Crear dashboard</strong>
+          Genera una hoja resumen
+        </button>
+        <button class="quick-btn" data-prompt="Revisa todas las hojas y limpia datos vacíos, duplicados y errores de formato">
+          <strong>🧹 Limpiar datos</strong>
+          Encuentra y corrige problemas
+        </button>
       </div>
     </div>
   </div>
 
-  <div class="card">
-    <div class="card-hd"><h3>Verificar conexión</h3></div>
-    <div class="card-bd fc g10">
-      <button class="btn btn-s" onclick="testConn()">🔌 Probar conexión ahora</button>
-      <div id="test-out" style="font-size:11px;color:var(--t2);line-height:1.5"></div>
+  <!-- ═══ CONTEXT BAR ═══ -->
+  <div class="context-bar">
+    <span style="color:var(--text-dim)">Contexto:</span>
+    <div class="context-badge" id="ctxSheets">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <span id="ctxSheetsCount">0 hojas</span>
+    </div>
+    <div class="context-badge" id="ctxCells">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span id="ctxCellsCount">0 celdas</span>
     </div>
   </div>
 
-  <button class="btn btn-d" onclick="resetAll()">🗑 Restablecer configuración</button>
-  <button class="btn btn-s" onclick="backFromSettings()">← Volver al chat</button>
-</div>
+  <!-- ═══ INPUT ═══ -->
+  <div class="input-area">
+    <div class="input-row">
+      <div class="input-wrapper">
+        <textarea id="userInput" rows="1" placeholder="Escribe tu instrucción para Claude..."></textarea>
+      </div>
+      <button class="send-btn" id="btnSend" disabled>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+    <div class="input-hint">Enter para enviar · Shift+Enter para nueva línea</div>
+  </div>
 
-<!-- ═══ STATUS BAR ═══ -->
-<div id="sbar">
-  <div id="sdot"></div>
-  <span id="stxt">Sin configurar</span>
-  <button id="clr-btn" onclick="clearChat()">Limpiar</button>
-</div>
+  <!-- Toast -->
+  <div class="toast-container" id="toasts"></div>
 
-<script>
-'use strict';
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    //  CLAUDE AI PARA EXCEL - COMPLEMENTO EMPRESARIAL
+    //  Conecta con Azure Foundry (Anthropic Messages API)
+    //  Lee todo el libro y puede modificarlo
+    // ═══════════════════════════════════════════════════════════════
 
-// ═══════════════════════════════════
-//  STATE
-// ═══════════════════════════════════
-const SK = 'sonnet_ai_v2';
-let C = { res:'', key:'', dep:'claude-sonnet-4-6', lang:'es', auto:true, ext:false };
-let history = [];
-let selData = null;
-let ctxOn = false;
-let busy = false;
-let prevScreen = 'chat';
+    let config = { resource: '', apiKey: '', model: 'claude-sonnet-4-6', systemPrompt: '' };
+    let conversationHistory = [];
+    let isProcessing = false;
+    let officeReady = false;
 
-// ═══════════════════════════════════
-//  INIT
-// ═══════════════════════════════════
-Office.onReady(info => {
-  load();
-  render();
-  if (info.host === Office.HostType.Excel) {
-    // welcome message
-    if (C.res && C.key) addWelcome();
-    // auto-refresh selection
-    Excel.run(async ctx => {
-      ctx.workbook.onSelectionChanged.add(() => { if(C.auto) refreshSel(); });
-      await ctx.sync();
-    }).catch(()=>{});
-  }
-});
-
-function addWelcome() {
-  addMsg('ai', `¡Hola! Soy tu asistente de Excel con Claude Sonnet.
-
-Puedo ayudarte a:
-• Analizar y resumir tus datos
-• Generar fórmulas complejas
-• Depurar errores (#REF!, #VALUE!...)
-• Interpretar tendencias y outliers
-
-Selecciona celdas y pregúntame lo que necesites.`);
-}
-
-// ═══════════════════════════════════
-//  CONFIG
-// ═══════════════════════════════════
-function load() {
-  try { const s = localStorage.getItem(SK); if(s) C = {...C, ...JSON.parse(s)}; } catch(e){}
-}
-function save() {
-  try { localStorage.setItem(SK, JSON.stringify(C)); } catch(e){}
-}
-
-function saveConfig() {
-  C.res  = v('i-res').trim();
-  C.key  = v('i-key').trim();
-  C.dep  = v('i-dep').trim() || 'claude-sonnet-4-6';
-  C.lang = v('i-lang');
-  if (!C.res || !C.key) { status('⚠ Completa Resource Name y API Key','er'); return; }
-  save(); render();
-  addWelcome();
-  status('Conectado a ' + C.res + ' ✓','ok');
-}
-
-function updateConfig() {
-  C.res  = v('s-res').trim();
-  C.key  = v('s-key').trim();
-  C.dep  = v('s-dep').trim() || 'claude-sonnet-4-6';
-  C.lang = v('s-lang');
-  save(); status('Configuración actualizada ✓','ok');
-}
-
-function resetAll() {
-  if (!confirm('¿Borrar toda la configuración?')) return;
-  localStorage.removeItem(SK);
-  C = { res:'', key:'', dep:'claude-sonnet-4-6', lang:'es', auto:true, ext:false };
-  history = [];
-  render();
-}
-
-function togSet(k) {
-  C[k] = !C[k];
-  const el = document.getElementById('tog-' + k);
-  if(el) el.classList.toggle('on', C[k]);
-  save();
-}
-
-// ═══════════════════════════════════
-//  RENDER / NAVIGATION
-// ═══════════════════════════════════
-function render() {
-  const hasConf = C.res && C.key;
-  // screens
-  showScreen(hasConf ? 'chat' : 'setup');
-  el('tabs').classList.toggle('hidden', !hasConf);
-  // fill settings
-  if (hasConf) {
-    set('s-res', C.res); set('s-key', C.key);
-    set('s-dep', C.dep); set('s-lang', C.lang);
-    ['auto','ext'].forEach(k => {
-      const t = document.getElementById('tog-'+k);
-      if(t) t.classList.toggle('on', C[k]);
+    // ── Office.js init ──
+    Office.onReady(function(info) {
+      if (info.host === Office.HostType.Excel) {
+        officeReady = true;
+        updateStatus('connected', 'Excel conectado');
+        loadConfig();
+        setupEventListeners();
+        updateContextInfo();
+      } else {
+        updateStatus('error', 'Solo funciona en Excel');
+      }
     });
-    el('hdr-sub').textContent = C.res + ' · ' + C.dep;
-    status('Conectado ✓','ok');
-  } else {
-    // fill setup fields
-    set('i-res', C.res); set('i-key', C.key);
-    set('i-dep', C.dep || 'claude-sonnet-4-6');
-    set('i-lang', C.lang);
-    status('Sin configurar','');
-    el('hdr-sub').textContent = 'Azure AI Foundry';
-  }
-}
 
-function showScreen(name) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
-  el(name).classList.add('on');
-  // update tabs
-  ['chat','analyze','formulas'].forEach(n => {
-    const t = el('t-'+n);
-    if(t) t.classList.toggle('on', n===name);
-  });
-}
+    // ── Config ──
+    function loadConfig() {
+      try {
+        const saved = localStorage.getItem('claude_excel_config');
+        if (saved) {
+          config = JSON.parse(saved);
+          document.getElementById('cfgResource').value = config.resource || '';
+          document.getElementById('cfgApiKey').value = config.apiKey || '';
+          document.getElementById('cfgModel').value = config.model || 'claude-sonnet-4-6';
+          document.getElementById('cfgSystem').value = config.systemPrompt || '';
+          if (config.resource && config.apiKey) {
+            updateStatus('connected', `Conectado: ${config.model}`);
+          }
+        }
+      } catch(e) { /* first load */ }
+    }
 
-function sw(name) {
-  prevScreen = name;
-  showScreen(name);
-  if (name === 'analyze') refreshSel();
-}
+    function saveConfig() {
+      config.resource = document.getElementById('cfgResource').value.trim();
+      config.apiKey = document.getElementById('cfgApiKey').value.trim();
+      config.model = document.getElementById('cfgModel').value;
+      config.systemPrompt = document.getElementById('cfgSystem').value.trim();
 
-function gotoSettings() {
-  // fill settings fields first
-  set('s-res', C.res); set('s-key', C.key);
-  set('s-dep', C.dep); set('s-lang', C.lang);
-  showScreen('settings');
-}
+      if (!config.resource || !config.apiKey) {
+        showToast('Completa el nombre del recurso y la API key', 'error');
+        return;
+      }
 
-function backFromSettings() {
-  showScreen(prevScreen || 'chat');
-}
+      localStorage.setItem('claude_excel_config', JSON.stringify(config));
+      updateStatus('connected', `Conectado: ${config.model}`);
+      document.getElementById('configPanel').classList.remove('open');
+      showToast('Configuración guardada', 'success');
+      testConnection();
+    }
 
-// ═══════════════════════════════════
-//  AZURE AI FOUNDRY API
-// ═══════════════════════════════════
-async function callClaude(msgs, sys) {
-  if (!C.res || !C.key) throw new Error('Sin configurar — abre ⚙ y completa las credenciales');
+    async function testConnection() {
+      try {
+        const url = `https://${config.resource}.services.ai.azure.com/anthropic/v1/messages`;
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': config.apiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify({
+            model: config.model,
+            max_tokens: 50,
+            messages: [{ role: 'user', content: 'Responde solo: OK' }]
+          })
+        });
+        if (resp.ok) {
+          updateStatus('connected', `Conectado: ${config.model}`);
+          showToast('Conexión exitosa con Azure Foundry', 'success');
+        } else {
+          const err = await resp.text();
+          updateStatus('error', 'Error de conexión');
+          showToast(`Error ${resp.status}: ${err.substring(0, 100)}`, 'error');
+        }
+      } catch(e) {
+        updateStatus('error', 'Sin conexión');
+        showToast(`Error de red: ${e.message}`, 'error');
+      }
+    }
 
-  // Azure AI Foundry endpoint format
-  const url = `https://${C.res}.services.ai.azure.com/anthropic/v1/messages`;
+    // ── Event Listeners ──
+    function setupEventListeners() {
+      document.getElementById('btnConfig').addEventListener('click', () => {
+        document.getElementById('configPanel').classList.toggle('open');
+      });
+      document.getElementById('btnSaveConfig').addEventListener('click', saveConfig);
+      document.getElementById('btnClear').addEventListener('click', clearChat);
+      document.getElementById('btnSend').addEventListener('click', sendMessage);
 
-  const body = {
-    model:      C.dep,
-    max_tokens: C.ext ? 4096 : 2048,
-    system:     sys || sysPrompt(),
-    messages:   msgs
-  };
+      const input = document.getElementById('userInput');
+      input.addEventListener('input', function() {
+        this.style.height = 'auto';
+        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        document.getElementById('btnSend').disabled = !this.value.trim() || isProcessing;
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          if (this.value.trim() && !isProcessing) sendMessage();
+        }
+      });
 
-  let resp;
-  try {
-    resp = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         C.key,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify(body)
-    });
-  } catch(e) {
-    throw new Error('No se pudo conectar con Azure. Verifica el Resource Name y tu conexión a internet.');
-  }
+      document.querySelectorAll('.quick-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.getElementById('userInput').value = btn.dataset.prompt;
+          document.getElementById('btnSend').disabled = false;
+          sendMessage();
+        });
+      });
+    }
 
-  if (!resp.ok) {
-    let msg = `HTTP ${resp.status}`;
-    try {
-      const j = await resp.json();
-      msg = j.error?.message || j.message || msg;
-    } catch(_) {}
+    // ═══════════════════════════════════════════════════════
+    //  LECTURA INTELIGENTE DEL LIBRO DE EXCEL
+    //  Estrategia adaptativa para hojas de cualquier tamaño
+    // ═══════════════════════════════════════════════════════
 
-    if (resp.status === 401) throw new Error('API Key incorrecta (401). Verifica la clave en Azure.');
-    if (resp.status === 404) throw new Error('Recurso o deployment no encontrado (404). Verifica el Resource Name y Deployment Name.');
-    if (resp.status === 429) throw new Error('Límite de peticiones alcanzado (429). Espera un momento.');
-    throw new Error(msg);
-  }
+    const SMALL_SHEET_LIMIT = 2000;
+    const SAMPLE_HEAD = 50;
+    const SAMPLE_TAIL = 30;
+    const SAMPLE_RANDOM_COUNT = 70;
+    const CHUNK_SIZE = 5000;
+    const MAX_CONTEXT_CHARS = 120000;
 
-  const data = await resp.json();
-  return data.content?.map(b => b.text || '').join('') || '';
-}
+    async function readFullWorkbook() {
+      if (!officeReady) return { error: 'Office no está listo' };
 
-function sysPrompt() {
-  const langs = {
-    es:'Responde siempre en español.',
-    en:'Always respond in English.',
-    pt:'Responda sempre em português.',
-    fr:'Réponds toujours en français.'
-  };
-  return `Eres Sonnet AI, un asistente experto en Microsoft Excel y análisis de datos, powered by Claude Sonnet via Azure AI Foundry.
-${langs[C.lang]||langs.es}
-CONTEXTO: Estás integrado como panel lateral en Excel. El usuario puede compartir datos de celdas contigo.
-COMPORTAMIENTO:
-- Sé conciso y práctico. Ve directo a la respuesta.
-- Para fórmulas, muéstralas entre ===FORMULA=== markers.
-- Usa ejemplos concretos con los datos que el usuario provea.
-- Si el usuario comparte datos de celdas, úsalos directamente en tu análisis.
-- Sugiere fórmulas modernas de Excel 365 (XLOOKUP, LET, LAMBDA, FILTER, SORT, UNIQUE).`;
-}
+      return Excel.run(async (context) => {
+        const sheets = context.workbook.worksheets;
+        sheets.load('items/name');
+        await context.sync();
 
-// ═══════════════════════════════════
-//  TEST CONNECTION
-// ═══════════════════════════════════
-async function testConn() {
-  const out = el('test-out');
-  out.textContent = '⏳ Probando conexión...';
-  out.style.color = 'var(--t2)';
-  try {
-    const r = await callClaude([{role:'user',content:'Responde solo: OK'}]);
-    out.textContent = '✅ Conexión exitosa. Respuesta: ' + r.substring(0,50);
-    out.style.color = 'var(--ok)';
-    status('Conexión verificada ✓','ok');
-  } catch(e) {
-    out.textContent = '❌ ' + e.message;
-    out.style.color = 'var(--er)';
-    status('Error de conexión','er');
-  }
-}
+        const bookData = { sheets: [], totalCells: 0, strategy: {} };
+        const sheetMeta = [];
 
-// ═══════════════════════════════════
-//  EXCEL HELPERS
-// ═══════════════════════════════════
-async function getSel() {
-  try {
-    return await Excel.run(async ctx => {
-      const r = ctx.workbook.getSelectedRange();
-      r.load(['address','values','rowCount','columnCount','cellCount']);
-      await ctx.sync();
-      return {
-        address: r.address,
-        rows: r.rowCount,
-        cols: r.columnCount,
-        cells: r.cellCount,
-        values: r.values,
-        preview: fmtPreview(r.values, r.rowCount, r.columnCount)
+        for (const sheet of sheets.items) {
+          const usedRange = sheet.getUsedRangeOrNullObject(true);
+          usedRange.load(['address', 'rowCount', 'columnCount']);
+          sheetMeta.push({ sheet, usedRange });
+        }
+        await context.sync();
+
+        let totalRows = 0;
+        const metaResults = [];
+        for (const { sheet, usedRange } of sheetMeta) {
+          if (usedRange.isNullObject) {
+            metaResults.push({ name: sheet.name, empty: true });
+          } else {
+            totalRows += usedRange.rowCount;
+            metaResults.push({
+              name: sheet.name, empty: false,
+              address: usedRange.address,
+              rows: usedRange.rowCount,
+              cols: usedRange.columnCount,
+              sheet
+            });
+          }
+        }
+
+        for (const meta of metaResults) {
+          if (meta.empty) {
+            bookData.sheets.push({ name: meta.name, empty: true, data: [] });
+            continue;
+          }
+
+          const sheetInfo = {
+            name: meta.name, empty: false,
+            address: meta.address, rows: meta.rows, cols: meta.cols
+          };
+          bookData.totalCells += (meta.rows * meta.cols);
+
+          if (meta.rows <= SMALL_SHEET_LIMIT) {
+            // ── HOJA PEQUEÑA/MEDIANA: leer completa ──
+            sheetInfo.readStrategy = 'complete';
+            sheetInfo.data = await readSheetRange(context, meta.sheet, 1, meta.rows, meta.cols);
+          } else {
+            // ── HOJA GRANDE: muestreo inteligente ──
+            sheetInfo.readStrategy = 'sampled';
+            sheetInfo.totalRows = meta.rows;
+
+            // Encabezados + primeras filas
+            const headEnd = Math.min(SAMPLE_HEAD, meta.rows);
+            sheetInfo.headData = await readSheetRange(context, meta.sheet, 1, headEnd, meta.cols);
+
+            // Últimas filas
+            const tailStart = Math.max(meta.rows - SAMPLE_TAIL + 1, headEnd + 1);
+            if (tailStart <= meta.rows) {
+              sheetInfo.tailData = await readSheetRange(context, meta.sheet, tailStart, meta.rows, meta.cols);
+              sheetInfo.tailStartRow = tailStart;
+            }
+
+            // Muestra aleatoria del medio
+            const middleStart = headEnd + 1;
+            const middleEnd = tailStart - 1;
+            if (middleEnd > middleStart) {
+              const sampleIndices = getRandomSampleIndices(middleStart, middleEnd, SAMPLE_RANDOM_COUNT);
+              sheetInfo.sampleData = [];
+              sheetInfo.sampleRows = [];
+              const blocks = groupIntoContiguousBlocks(sampleIndices);
+              for (const block of blocks) {
+                const blockData = await readSheetRange(context, meta.sheet, block[0], block[block.length - 1], meta.cols);
+                for (let i = 0; i < blockData.length; i++) {
+                  if (sampleIndices.includes(block[0] + i)) {
+                    sheetInfo.sampleRows.push(block[0] + i);
+                    sheetInfo.sampleData.push(blockData[i]);
+                  }
+                }
+              }
+            }
+
+            // Estadísticas de columnas
+            sheetInfo.columnStats = await computeColumnStats(context, meta.sheet, meta.rows, meta.cols);
+          }
+
+          bookData.sheets.push(sheetInfo);
+        }
+
+        bookData.strategy = { smallSheetLimit: SMALL_SHEET_LIMIT, totalRowsInBook: totalRows };
+        return bookData;
+      });
+    }
+
+    async function readSheetRange(context, sheet, startRow, endRow, totalCols) {
+      const rows = [];
+      const colEnd = colLetter(Math.min(totalCols, 100));
+      for (let r = startRow; r <= endRow; r += CHUNK_SIZE) {
+        const blockEnd = Math.min(r + CHUNK_SIZE - 1, endRow);
+        const range = sheet.getRange(`A${r}:${colEnd}${blockEnd}`);
+        range.load('text');
+        await context.sync();
+        if (range.text) rows.push(...range.text);
+      }
+      return rows;
+    }
+
+    async function readArbitraryRange(sheetName, rangeAddress) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(rangeAddress);
+        range.load(['text', 'values', 'rowCount', 'columnCount', 'address']);
+        await context.sync();
+        return {
+          address: range.address, rows: range.rowCount,
+          cols: range.columnCount, data: range.text || range.values
+        };
+      });
+    }
+
+    async function computeColumnStats(context, sheet, totalRows, totalCols) {
+      const stats = [];
+      const maxCols = Math.min(totalCols, 30);
+      const headerRange = sheet.getRange(`A1:${colLetter(maxCols)}1`);
+      headerRange.load('text');
+      const sampleRange = sheet.getRange(`A2:${colLetter(maxCols)}${Math.min(20, totalRows)}`);
+      sampleRange.load('values');
+      await context.sync();
+
+      const headers = headerRange.text ? headerRange.text[0] : [];
+
+      for (let c = 0; c < maxCols; c++) {
+        const colName = headers[c] || `Col${c + 1}`;
+        const sampleValues = sampleRange.values
+          ? sampleRange.values.map(row => row[c]).filter(v => v !== null && v !== '')
+          : [];
+        const numericValues = sampleValues.filter(v => typeof v === 'number' || !isNaN(Number(v)));
+        const isNumeric = numericValues.length > sampleValues.length * 0.5;
+
+        if (isNumeric && sampleValues.length > 0) {
+          stats.push({
+            column: colName, colIndex: c, type: 'numeric',
+            sampleMin: Math.min(...numericValues.map(Number)),
+            sampleMax: Math.max(...numericValues.map(Number)),
+            totalRows: totalRows - 1
+          });
+        } else {
+          const uniqueValues = [...new Set(sampleValues.map(String))];
+          stats.push({
+            column: colName, colIndex: c, type: 'text',
+            sampleUniqueCount: uniqueValues.length,
+            sampleValues: uniqueValues.slice(0, 10)
+          });
+        }
+      }
+      return stats;
+    }
+
+    function getRandomSampleIndices(start, end, count) {
+      const range = end - start + 1;
+      if (range <= count) return Array.from({ length: range }, (_, i) => start + i);
+      const indices = new Set();
+      while (indices.size < count) indices.add(start + Math.floor(Math.random() * range));
+      return [...indices].sort((a, b) => a - b);
+    }
+
+    function groupIntoContiguousBlocks(sortedIndices) {
+      if (!sortedIndices.length) return [];
+      const blocks = [[sortedIndices[0]]];
+      for (let i = 1; i < sortedIndices.length; i++) {
+        const last = blocks[blocks.length - 1];
+        if (sortedIndices[i] - last[last.length - 1] <= 3) {
+          for (let f = last[last.length - 1] + 1; f <= sortedIndices[i]; f++) last.push(f);
+        } else {
+          blocks.push([sortedIndices[i]]);
+        }
+      }
+      return blocks;
+    }
+
+    function colLetter(colNum) {
+      let letter = '', num = colNum;
+      while (num > 0) {
+        const mod = (num - 1) % 26;
+        letter = String.fromCharCode(65 + mod) + letter;
+        num = Math.floor((num - 1) / 26);
+      }
+      return letter || 'A';
+    }
+
+    async function readActiveSheet() {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getActiveWorksheet();
+        sheet.load('name');
+        const usedRange = sheet.getUsedRangeOrNullObject(true);
+        usedRange.load(['address', 'rowCount', 'columnCount']);
+        await context.sync();
+        if (usedRange.isNullObject) return { name: sheet.name, empty: true };
+        return {
+          name: sheet.name, address: usedRange.address,
+          rows: usedRange.rowCount, cols: usedRange.columnCount
+        };
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  MODIFICACIÓN DEL LIBRO DE EXCEL
+    // ═══════════════════════════════════════════════════════
+
+    async function executeExcelOperations(operations) {
+      const results = [];
+
+      for (const op of operations) {
+        try {
+          switch (op.action) {
+            case 'write_cells':
+              await writeCells(op.sheet, op.startCell, op.values);
+              results.push({ action: op.action, status: 'ok', detail: `Escrito en ${op.sheet}!${op.startCell}` });
+              break;
+
+            case 'write_cell':
+              await writeSingleCell(op.sheet, op.cell, op.value);
+              results.push({ action: op.action, status: 'ok', detail: `Celda ${op.sheet}!${op.cell} = ${op.value}` });
+              break;
+
+            case 'create_sheet':
+              await createSheet(op.name);
+              results.push({ action: op.action, status: 'ok', detail: `Hoja "${op.name}" creada` });
+              break;
+
+            case 'delete_rows':
+              await deleteRows(op.sheet, op.startRow, op.count);
+              results.push({ action: op.action, status: 'ok', detail: `${op.count} filas eliminadas en ${op.sheet}` });
+              break;
+
+            case 'insert_rows':
+              await insertRows(op.sheet, op.startRow, op.count);
+              results.push({ action: op.action, status: 'ok', detail: `${op.count} filas insertadas en ${op.sheet}` });
+              break;
+
+            case 'format_range':
+              await formatRange(op.sheet, op.range, op.format);
+              results.push({ action: op.action, status: 'ok', detail: `Formato aplicado a ${op.sheet}!${op.range}` });
+              break;
+
+            case 'set_formula':
+              await setFormula(op.sheet, op.cell, op.formula);
+              results.push({ action: op.action, status: 'ok', detail: `Fórmula en ${op.sheet}!${op.cell}` });
+              break;
+
+            case 'auto_fit':
+              await autoFitColumns(op.sheet, op.range);
+              results.push({ action: op.action, status: 'ok', detail: `Autoajuste en ${op.sheet}` });
+              break;
+
+            case 'sort_range':
+              await sortRange(op.sheet, op.range, op.column, op.ascending);
+              results.push({ action: op.action, status: 'ok', detail: `Ordenado ${op.sheet}!${op.range}` });
+              break;
+
+            case 'clear_range':
+              await clearRange(op.sheet, op.range);
+              results.push({ action: op.action, status: 'ok', detail: `Limpiado ${op.sheet}!${op.range}` });
+              break;
+
+            default:
+              results.push({ action: op.action, status: 'error', detail: `Acción desconocida: ${op.action}` });
+          }
+        } catch(e) {
+          results.push({ action: op.action, status: 'error', detail: e.message });
+        }
+      }
+      return results;
+    }
+
+    async function writeCells(sheetName, startCell, values) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const startRange = sheet.getRange(startCell);
+        const targetRange = startRange.getResizedRange(values.length - 1, values[0].length - 1);
+        targetRange.values = values;
+        await context.sync();
+      });
+    }
+
+    async function writeSingleCell(sheetName, cell, value) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(cell);
+        range.values = [[value]];
+        await context.sync();
+      });
+    }
+
+    async function createSheet(name) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.add(name);
+        sheet.activate();
+        await context.sync();
+      });
+    }
+
+    async function deleteRows(sheetName, startRow, count) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(`${startRow}:${startRow + count - 1}`);
+        range.delete(Excel.DeleteShiftDirection.up);
+        await context.sync();
+      });
+    }
+
+    async function insertRows(sheetName, startRow, count) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(`${startRow}:${startRow + count - 1}`);
+        range.insert(Excel.InsertShiftDirection.down);
+        await context.sync();
+      });
+    }
+
+    async function formatRange(sheetName, rangeAddr, format) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(rangeAddr);
+        if (format.bold !== undefined) range.format.font.bold = format.bold;
+        if (format.italic !== undefined) range.format.font.italic = format.italic;
+        if (format.color) range.format.font.color = format.color;
+        if (format.bgColor) range.format.fill.color = format.bgColor;
+        if (format.fontSize) range.format.font.size = format.fontSize;
+        if (format.numberFormat) range.numberFormat = [[format.numberFormat]];
+        if (format.hAlign) range.format.horizontalAlignment = format.hAlign;
+        if (format.borders) {
+          range.format.borders.getItem('EdgeTop').style = 'Continuous';
+          range.format.borders.getItem('EdgeBottom').style = 'Continuous';
+          range.format.borders.getItem('EdgeLeft').style = 'Continuous';
+          range.format.borders.getItem('EdgeRight').style = 'Continuous';
+        }
+        await context.sync();
+      });
+    }
+
+    async function setFormula(sheetName, cell, formula) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(cell);
+        range.formulas = [[formula]];
+        await context.sync();
+      });
+    }
+
+    async function autoFitColumns(sheetName, rangeAddr) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = rangeAddr ? sheet.getRange(rangeAddr) : sheet.getUsedRange();
+        range.format.autofitColumns();
+        range.format.autofitRows();
+        await context.sync();
+      });
+    }
+
+    async function sortRange(sheetName, rangeAddr, column, ascending) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(rangeAddr);
+        range.sort.apply([{ key: column || 0, ascending: ascending !== false }]);
+        await context.sync();
+      });
+    }
+
+    async function clearRange(sheetName, rangeAddr) {
+      return Excel.run(async (context) => {
+        const sheet = context.workbook.worksheets.getItem(sheetName);
+        const range = sheet.getRange(rangeAddr);
+        range.clear();
+        await context.sync();
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  API CALL A AZURE FOUNDRY
+    // ═══════════════════════════════════════════════════════
+
+    async function callClaudeAPI(messages) {
+      const url = `https://${config.resource}.services.ai.azure.com/anthropic/v1/messages`;
+
+      const body = {
+        model: config.model,
+        max_tokens: 4096,
+        messages: messages
       };
-    });
-  } catch(e) { return null; }
-}
 
-function fmtPreview(vals, rows, cols) {
-  if (!vals || !rows) return '';
-  const mr = Math.min(rows, 15), mc = Math.min(cols, 8);
-  let out = '';
-  for(let r=0; r<mr; r++) {
-    const row = [];
-    for(let c=0; c<mc; c++) {
-      const v = vals[r][c];
-      row.push(v===null||v===''?'∅':String(v).substring(0,25));
+      if (config.systemPrompt) {
+        body.system = config.systemPrompt;
+      }
+
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': config.apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(body)
+      });
+
+      if (!resp.ok) {
+        const errText = await resp.text();
+        throw new Error(`API Error ${resp.status}: ${errText}`);
+      }
+
+      return resp.json();
     }
-    out += row.join(' | ') + '\n';
-  }
-  if(rows>mr) out += `...+${rows-mr} filas`;
-  return out;
-}
 
-async function refreshSel() {
-  const data = await getSel();
-  selData = data;
-  const si = el('sel-info');
-  const sp = el('sel-preview');
-  if (!data || data.cells <= 1) {
-    si.innerHTML = '<span style="color:var(--t3)">Selecciona celdas en Excel y pulsa ↻</span>';
-    sp.classList.add('hidden');
-    return;
-  }
-  si.innerHTML = `Rango: <span class="hl">${data.address}</span> · <span class="hl">${data.rows}×${data.cols}</span> · ${data.cells} celdas`;
-  if (data.preview) {
-    sp.textContent = data.preview;
-    sp.classList.remove('hidden');
-  }
-}
+    // ═══════════════════════════════════════════════════════
+    //  FLUJO PRINCIPAL DE MENSAJES
+    // ═══════════════════════════════════════════════════════
 
-async function capSel() {
-  const data = await getSel();
-  if (!data || data.cells <= 1) {
-    addMsg('sys', '⚠ Selecciona un rango de celdas en Excel primero.');
-    return;
-  }
-  selData = data;
-  ctxOn = true;
-  el('ctx-bar').classList.add('on');
-  el('ctx-txt').textContent = `${data.address} (${data.rows}×${data.cols}) incluido`;
-  addMsg('sys', `📋 Capturado: ${data.address} — ${data.rows} filas × ${data.cols} columnas`);
-}
+    async function sendMessage() {
+      const input = document.getElementById('userInput');
+      const userText = input.value.trim();
+      if (!userText || isProcessing) return;
 
-function clearCtx() {
-  ctxOn = false;
-  el('ctx-bar').classList.remove('on');
-}
+      if (!config.resource || !config.apiKey) {
+        showToast('Configura primero tu conexión Azure Foundry', 'error');
+        document.getElementById('configPanel').classList.add('open');
+        return;
+      }
 
-async function insertF() {
-  const fEl = el('f-result');
-  if (fEl.classList.contains('empty')) return;
-  const formula = fEl.textContent.trim();
-  try {
-    await Excel.run(async ctx => {
-      const r = ctx.workbook.getSelectedRange();
-      r.values = [[formula]];
-      await ctx.sync();
-    });
-    status('Fórmula insertada ✓','ok');
-  } catch(e) { status('Error: '+e.message,'er'); }
-}
+      // Ocultar welcome
+      const welcome = document.getElementById('welcomeScreen');
+      if (welcome) welcome.style.display = 'none';
 
-// ═══════════════════════════════════
-//  CHAT
-// ═══════════════════════════════════
-async function send() {
-  const inp = el('chat-in');
-  const txt = inp.value.trim();
-  if (!txt || busy) return;
+      // Mostrar mensaje del usuario
+      addMessage('user', userText);
+      input.value = '';
+      input.style.height = 'auto';
+      document.getElementById('btnSend').disabled = true;
+      isProcessing = true;
 
-  // Build context string
-  let ctx = '';
-  if (ctxOn && selData) {
-    ctx = `\n\n[DATOS EXCEL · ${selData.address} (${selData.rows}×${selData.cols})]:\n${selData.preview}`;
-    clearCtx();
-  } else if (C.auto) {
-    const d = await getSel();
-    if (d && d.cells > 1) {
-      ctx = `\n\n[DATOS EXCEL · ${d.address} (${d.rows}×${d.cols})]:\n${d.preview}`;
+      // Indicador de typing
+      const typingId = showTyping();
+
+      try {
+        // 1) Leer todo el libro
+        updateStatus('connected', 'Leyendo libro...');
+        const workbookData = await readFullWorkbook();
+        updateContextInfo();
+
+        // 2) Construir contexto para Claude
+        const excelContext = buildExcelContext(workbookData);
+
+        // 3) Construir mensajes incluyendo sistema de herramientas
+        const systemInstructions = buildSystemInstructions();
+
+        // Agregar al historial
+        conversationHistory.push({ role: 'user', content: `${systemInstructions}\n\n[DATOS DEL LIBRO DE EXCEL]\n${excelContext}\n\n[INSTRUCCIÓN DEL USUARIO]\n${userText}` });
+
+        // Si el historial es muy largo, mantener solo últimos 10 intercambios
+        if (conversationHistory.length > 20) {
+          conversationHistory = conversationHistory.slice(-20);
+        }
+
+        // 4) Llamar a Claude
+        updateStatus('connected', 'Claude pensando...');
+        const response = await callClaudeAPI(conversationHistory);
+
+        const assistantText = response.content
+          .filter(b => b.type === 'text')
+          .map(b => b.text)
+          .join('\n');
+
+        const operations = extractExcelOperations(assistantText);
+
+        // 5) Detectar peticiones de lectura de rangos y hacer follow-up
+        const readRequests = extractReadRangeRequests(assistantText);
+        if (readRequests.length > 0) {
+          updateStatus('connected', `Leyendo ${readRequests.length} rangos adicionales...`);
+          let rangeData = '';
+          for (const req of readRequests) {
+            try {
+              const data = await readArbitraryRange(req.sheet, req.range);
+              rangeData += `\n[DATOS LEÍDOS: ${req.sheet}!${req.range}] (${data.rows} filas x ${data.cols} cols)\n`;
+              if (data.data) {
+                const maxRows = Math.min(data.data.length, 300);
+                for (let i = 0; i < maxRows; i++) {
+                  rangeData += `  Fila: ${data.data[i].join(' | ')}\n`;
+                }
+                if (data.data.length > 300) {
+                  rangeData += `  ... (${data.data.length - 300} filas más)\n`;
+                }
+              }
+            } catch(e) {
+              rangeData += `\n[ERROR leyendo ${req.sheet}!${req.range}: ${e.message}]\n`;
+            }
+          }
+
+          // Segundo llamado a Claude con los datos del rango
+          conversationHistory.push({ role: 'assistant', content: assistantText });
+          conversationHistory.push({ role: 'user', content: `Aquí están los datos que pediste:\n${rangeData}\n\nContinúa tu análisis o aplica las operaciones necesarias.` });
+
+          updateStatus('connected', 'Claude procesando datos adicionales...');
+          const followUp = await callClaudeAPI(conversationHistory);
+          const followUpText = followUp.content
+            .filter(b => b.type === 'text')
+            .map(b => b.text)
+            .join('\n');
+
+          conversationHistory.push({ role: 'assistant', content: followUpText });
+
+          // Ejecutar operaciones del follow-up
+          const followUpOps = extractExcelOperations(followUpText);
+          if (followUpOps.length > 0) {
+            operations.push(...followUpOps);
+          }
+
+          // Combinar textos para display
+          const combinedText = assistantText + '\n\n---\n\n' + followUpText;
+          removeTyping(typingId);
+          const cleanResponse = cleanResponseForDisplay(combinedText);
+          addMessage('assistant', cleanResponse);
+        } else {
+          conversationHistory.push({ role: 'assistant', content: assistantText });
+          removeTyping(typingId);
+          const cleanResponse = cleanResponseForDisplay(assistantText);
+          addMessage('assistant', cleanResponse);
+        }
+
+        // 6) Ejecutar operaciones Excel
+        let execResults = null;
+        if (operations.length > 0) {
+          updateStatus('connected', `Ejecutando ${operations.length} operaciones...`);
+          execResults = await executeExcelOperations(operations);
+          updateContextInfo();
+        }
+
+        if (execResults) {
+          const summary = execResults.map(r =>
+            `${r.status === 'ok' ? '✅' : '❌'} ${r.detail}`
+          ).join('\n');
+          addMessage('system', `Operaciones ejecutadas:\n${summary}`);
+        }
+
+        updateStatus('connected', `Conectado: ${config.model}`);
+
+      } catch(err) {
+        removeTyping(typingId);
+        addMessage('system', `Error: ${err.message}`);
+        updateStatus('error', 'Error en la solicitud');
+        showToast(err.message, 'error');
+      } finally {
+        isProcessing = false;
+        document.getElementById('btnSend').disabled = !input.value.trim();
+      }
     }
-  }
 
-  inp.value = '';
-  inp.style.height = 'auto';
-  addMsg('me', txt);
-  history.push({role:'user', content: txt + ctx});
+    function buildSystemInstructions() {
+      return `Eres un asistente de IA experto en Excel integrado como complemento empresarial.
+CAPACIDADES:
+- Puedes LEER todos los datos del libro que se te proporcionan como contexto.
+- Puedes MODIFICAR el libro usando operaciones estructuradas.
+- Para HOJAS GRANDES (>2,000 filas) recibes un muestreo inteligente: encabezados, primeras 50 filas, 70 filas aleatorias del medio, últimas 30 filas, y estadísticas de columnas.
+- Puedes PEDIR LEER RANGOS ESPECÍFICOS de hojas grandes cuando necesites más datos.
 
-  const typing = addTyping();
-  setBusy(true);
+PARA LEER UN RANGO ESPECÍFICO de una hoja grande, incluye este bloque:
+\`\`\`read_range
+{"sheet": "NombreHoja", "range": "A5000:J5200"}
+\`\`\`
+El complemento leerá ese rango y te lo enviará automáticamente para que continúes tu análisis.
 
-  try {
-    const reply = await callClaude(history);
-    history.push({role:'assistant', content: reply});
-    typing.remove();
-    addMsg('ai', reply);
-    status('Listo ✓','ok');
-  } catch(e) {
-    typing.remove();
-    addMsg('sys', '⚠ ' + e.message);
-    status('Error','er');
-  } finally {
-    setBusy(false);
-  }
-}
+PARA MODIFICAR EL LIBRO, incluye un bloque JSON así en tu respuesta:
+\`\`\`excel_operations
+[
+  {"action": "write_cells", "sheet": "Hoja1", "startCell": "A1", "values": [["Encabezado1", "Encabezado2"], ["dato1", "dato2"]]},
+  {"action": "write_cell", "sheet": "Hoja1", "cell": "C1", "value": "Texto"},
+  {"action": "set_formula", "sheet": "Hoja1", "cell": "D1", "formula": "=SUM(A1:C1)"},
+  {"action": "create_sheet", "name": "NuevaHoja"},
+  {"action": "delete_rows", "sheet": "Hoja1", "startRow": 5, "count": 2},
+  {"action": "insert_rows", "sheet": "Hoja1", "startRow": 3, "count": 1},
+  {"action": "format_range", "sheet": "Hoja1", "range": "A1:D1", "format": {"bold": true, "bgColor": "#4472C4", "color": "#FFFFFF", "fontSize": 12, "borders": true}},
+  {"action": "auto_fit", "sheet": "Hoja1", "range": "A:D"},
+  {"action": "sort_range", "sheet": "Hoja1", "range": "A1:D20", "column": 0, "ascending": true},
+  {"action": "clear_range", "sheet": "Hoja1", "range": "E1:E50"}
+]
+\`\`\`
 
-function setBusy(on) {
-  busy = on;
-  el('send').disabled = on;
-  el('sdot').className = on ? 'ld' : (C.res ? 'ok' : '');
-}
+REGLAS PARA HOJAS GRANDES:
+- Con el muestreo puedes entender la estructura, tipos de datos, y patrones generales.
+- Si necesitas datos de un rango específico para completar el análisis, usa read_range.
+- Para operaciones que afectan TODAS las filas (como fórmulas), puedes aplicarlas directamente — no necesitas ver cada fila.
+- Las estadísticas de columnas te dan min/max/únicos para entender distribuciones sin ver todo.
+- Cuando el usuario pide "analizar todo", trabaja con el muestreo y sé transparente sobre lo que viste vs. el total.
 
-function onKey(e) {
-  if (e.key==='Enter' && (e.ctrlKey||e.metaKey)) { e.preventDefault(); send(); }
-}
-
-function resize(t) {
-  t.style.height = 'auto';
-  t.style.height = Math.min(t.scrollHeight, 100) + 'px';
-}
-
-function qa(txt) {
-  el('chat-in').value = txt;
-  resize(el('chat-in'));
-  el('chat-in').focus();
-}
-
-function addMsg(type, text) {
-  const msgs = el('msgs');
-  const div = document.createElement('div');
-  div.className = 'msg ' + type;
-
-  const label = type==='me'?'TÚ':type==='ai'?'SONNET AI':'SISTEMA';
-  const html = parseMsg(text);
-
-  let extra = '';
-  if (type === 'ai') {
-    extra = `<button class="copy-btn" onclick="copyTxt(this.parentElement.querySelector('.bubble').textContent)">copiar</button>`;
-    // Check for formula marker
-    const fm = text.match(/===FORMULA===\s*([\s\S]*?)\s*===FORMULA===/);
-    if (fm) {
-      const f = fm[1].trim().replace(/'/g,"\\'");
-      extra += `<button class="copy-btn" style="color:var(--ac)" onclick="putFormula('${f}')">⚡ insertar fórmula</button>`;
+REGLAS GENERALES:
+- Siempre explica lo que vas a hacer ANTES de mostrar las operaciones.
+- Si el usuario pide algo que requiere modificar el libro, incluye el bloque excel_operations.
+- Si solo pide análisis o información, responde en texto sin operaciones.
+- Sé preciso con los nombres de hojas (usa exactamente los nombres que ves en los datos).
+- Los valores numéricos van sin comillas en el JSON cuando sea posible.
+- Para fórmulas, usa la sintaxis de Excel estándar.`;
     }
-  }
 
-  div.innerHTML = `<div class="msg-label">${label}</div><div class="bubble">${html}</div>${extra}`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-  return div;
-}
+    function buildExcelContext(bookData) {
+      if (bookData.error) return `Error leyendo libro: ${bookData.error}`;
 
-function addTyping() {
-  const msgs = el('msgs');
-  const div = document.createElement('div');
-  div.className = 'msg ai';
-  div.innerHTML = `<div class="msg-label">SONNET AI</div><div class="bubble"><div class="dots"><span></span><span></span><span></span></div></div>`;
-  msgs.appendChild(div);
-  msgs.scrollTop = msgs.scrollHeight;
-  return div;
-}
+      let ctx = `Libro con ${bookData.sheets.length} hojas (${bookData.strategy.totalRowsInBook?.toLocaleString() || '?'} filas totales):\n`;
 
-function clearChat() {
-  if(!confirm('¿Limpiar el historial de chat?')) return;
-  history = [];
-  el('msgs').innerHTML = '';
-}
+      for (const sheet of bookData.sheets) {
+        ctx += `\n--- HOJA: "${sheet.name}" ---\n`;
+        if (sheet.empty) { ctx += '(vacía)\n'; continue; }
 
-function parseMsg(text) {
-  return esc(text)
-    .replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g,'<code>$1</code>')
-    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
-    .replace(/===FORMULA===([\s\S]*?)===FORMULA===/g,
-      '<pre style="color:var(--ok)"><code>$1</code></pre>');
-}
+        ctx += `Rango: ${sheet.address} (${sheet.rows.toLocaleString()} filas x ${sheet.cols} columnas)\n`;
+        ctx += `Estrategia de lectura: ${sheet.readStrategy}\n`;
 
-async function putFormula(f) {
-  try {
-    await Excel.run(async ctx => {
-      const r = ctx.workbook.getSelectedRange();
-      r.values = [[f]];
-      await ctx.sync();
-    });
-    status('Fórmula insertada ✓','ok');
-  } catch(e) { status('Error: '+e.message,'er'); }
-}
+        if (sheet.readStrategy === 'complete') {
+          // ── Hoja leída completa ──
+          if (sheet.data && sheet.data.length > 0) {
+            ctx += `Columnas: ${sheet.data[0].join(' | ')}\n`;
+            const maxDisplay = Math.min(sheet.data.length, 200);
+            for (let i = 0; i < maxDisplay; i++) {
+              ctx += `  Fila ${i + 1}: ${sheet.data[i].join(' | ')}\n`;
+            }
+            if (sheet.data.length > 200) {
+              ctx += `  ... (${sheet.data.length - 200} filas más disponibles, se enviaron todas)\n`;
+            }
+          }
 
-// ═══════════════════════════════════
-//  ANALYZE
-// ═══════════════════════════════════
-async function analyze(type) {
-  if (busy) return;
-  const data = selData || await getSel();
-  if (!data || data.cells <= 1) {
-    el('ana-out').textContent = '⚠ Selecciona un rango en Excel y pulsa ↻ primero.';
-    el('ana-out').classList.remove('empty');
-    return;
-  }
+        } else if (sheet.readStrategy === 'sampled') {
+          // ── Hoja grande: muestreo inteligente ──
+          ctx += `⚠️ HOJA GRANDE: ${sheet.totalRows.toLocaleString()} filas. Lectura por muestreo.\n`;
+          ctx += `Puedes pedirme leer un rango específico con: "lee las filas 5000-5200 de ${sheet.name}"\n\n`;
 
-  const prompts = {
-    summary:  `Resume estadísticamente estos datos: totales, promedios, máx, mín, tipos de datos.\nDATOS (${data.address}):\n${data.preview}`,
-    trends:   `Identifica tendencias y patrones en estos datos. Sé específico.\nDATOS (${data.address}):\n${data.preview}`,
-    outliers: `Detecta valores atípicos, anomalías y datos inconsistentes.\nDATOS (${data.address}):\n${data.preview}`,
-    quality:  `Evalúa la calidad: duplicados, vacíos, errores, inconsistencias. Puntúa 1-10.\nDATOS (${data.address}):\n${data.preview}`,
-    chart:    `¿Qué gráfico de Excel recomiendas para estos datos y por qué? Sé específico.\nDATOS (${data.address}):\n${data.preview}`,
-    formula:  `Sugiere 2 fórmulas Excel útiles para estos datos. Usa ===FORMULA=== markers.\nDATOS (${data.address}):\n${data.preview}`
-  };
+          // Encabezados + primeras filas
+          if (sheet.headData && sheet.headData.length > 0) {
+            ctx += `ENCABEZADOS Y PRIMERAS ${sheet.headData.length} FILAS:\n`;
+            ctx += `Columnas: ${sheet.headData[0].join(' | ')}\n`;
+            for (let i = 0; i < sheet.headData.length; i++) {
+              ctx += `  Fila ${i + 1}: ${sheet.headData[i].join(' | ')}\n`;
+            }
+          }
 
-  el('ana-out').textContent = '⏳ Analizando...';
-  el('ana-out').classList.remove('empty');
-  setBusy(true); status('Analizando...','ld');
+          // Muestra aleatoria
+          if (sheet.sampleData && sheet.sampleData.length > 0) {
+            ctx += `\nMUESTRA ALEATORIA (${sheet.sampleData.length} filas del medio):\n`;
+            for (let i = 0; i < sheet.sampleData.length; i++) {
+              ctx += `  Fila ${sheet.sampleRows[i]}: ${sheet.sampleData[i].join(' | ')}\n`;
+            }
+          }
 
-  try {
-    const r = await callClaude([{role:'user', content:prompts[type]}]);
-    el('ana-out').textContent = r;
-    status('Listo ✓','ok');
-  } catch(e) {
-    el('ana-out').textContent = '⚠ ' + e.message;
-    status('Error','er');
-  } finally { setBusy(false); }
-}
+          // Últimas filas
+          if (sheet.tailData && sheet.tailData.length > 0) {
+            ctx += `\nÚLTIMAS ${sheet.tailData.length} FILAS (desde fila ${sheet.tailStartRow.toLocaleString()}):\n`;
+            for (let i = 0; i < sheet.tailData.length; i++) {
+              ctx += `  Fila ${sheet.tailStartRow + i}: ${sheet.tailData[i].join(' | ')}\n`;
+            }
+          }
 
-// ═══════════════════════════════════
-//  FORMULAS
-// ═══════════════════════════════════
-async function genFormula() {
-  const desc = v('f-desc').trim();
-  const range = v('f-range').trim();
-  if (!desc) { alert('Describe qué quieres calcular.'); return; }
+          // Estadísticas de columnas
+          if (sheet.columnStats && sheet.columnStats.length > 0) {
+            ctx += `\nESTADÍSTICAS DE COLUMNAS:\n`;
+            for (const stat of sheet.columnStats) {
+              if (stat.type === 'numeric') {
+                ctx += `  "${stat.column}" (numérica): rango muestra [${stat.sampleMin} - ${stat.sampleMax}], ${stat.totalRows.toLocaleString()} filas de datos\n`;
+              } else {
+                ctx += `  "${stat.column}" (texto): ~${stat.sampleUniqueCount} valores únicos (muestra), ej: ${stat.sampleValues.join(', ')}\n`;
+              }
+            }
+          }
+        }
 
-  let ctx = range ? `\nRango: ${range}` : (selData ? `\nRango disponible: ${selData.address}` : '');
+        // Control de tamaño del contexto
+        if (ctx.length > MAX_CONTEXT_CHARS) {
+          ctx += `\n[CONTEXTO TRUNCADO - se alcanzó el límite de ${MAX_CONTEXT_CHARS.toLocaleString()} caracteres]\n`;
+          ctx += `Hojas restantes no incluidas. Pídeme leer hojas específicas.\n`;
+          break;
+        }
+      }
 
-  const prompt = `Genera una fórmula Excel para: ${desc}${ctx}
+      return ctx;
+    }
 
-Usa funciones modernas (XLOOKUP, LET, LAMBDA, FILTER, SORT, UNIQUE) cuando sea posible.
-Muestra SOLO la fórmula entre ===FORMULA=== markers, luego explica brevemente.`;
+    function extractExcelOperations(text) {
+      const regex = /```excel_operations\s*\n?([\s\S]*?)```/g;
+      const operations = [];
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        try {
+          const ops = JSON.parse(match[1].trim());
+          if (Array.isArray(ops)) operations.push(...ops);
+        } catch(e) { console.warn('Error parsing excel operations:', e); }
+      }
+      return operations;
+    }
 
-  const fEl = el('f-result');
-  fEl.textContent = '⏳ Generando...';
-  fEl.classList.remove('empty');
-  setBusy(true); status('Generando fórmula...','ld');
+    function extractReadRangeRequests(text) {
+      const regex = /```read_range\s*\n?([\s\S]*?)```/g;
+      const requests = [];
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        try {
+          const req = JSON.parse(match[1].trim());
+          if (req.sheet && req.range) requests.push(req);
+        } catch(e) { console.warn('Error parsing read_range:', e); }
+      }
+      return requests;
+    }
 
-  try {
-    const r = await callClaude([{role:'user', content:prompt}]);
-    const m = r.match(/===FORMULA===\s*([\s\S]*?)\s*===FORMULA===/);
-    fEl.textContent = m ? m[1].trim() : r;
-    status('Fórmula generada ✓','ok');
-  } catch(e) {
-    fEl.textContent = '⚠ ' + e.message;
-    status('Error','er');
-  } finally { setBusy(false); }
-}
+    function cleanResponseForDisplay(text) {
+      return text
+        .replace(/```excel_operations[\s\S]*?```/g, '')
+        .replace(/```read_range[\s\S]*?```/g, '')
+        .trim();
+    }
 
-async function debugF() {
-  const formula = v('dbg-in').trim();
-  if (!formula) { alert('Pega tu fórmula primero.'); return; }
+    // ═══════════════════════════════════════════════════════
+    //  UI HELPERS
+    // ═══════════════════════════════════════════════════════
 
-  const prompt = `Analiza esta fórmula Excel con error:\n${formula}\n\n1. ¿Qué está mal?\n2. Versión corregida entre ===FORMULA=== markers\n3. Explica los cambios`;
+    function addMessage(role, content) {
+      const chatArea = document.getElementById('chatArea');
+      const div = document.createElement('div');
+      div.className = `message ${role}`;
 
-  const out = el('dbg-out');
-  out.textContent = '⏳ Analizando...';
-  out.classList.remove('empty');
-  setBusy(true); status('Depurando...','ld');
+      if (role === 'system') {
+        div.innerHTML = formatMarkdown(content);
+      } else {
+        const time = new Date().toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' });
+        const roleName = role === 'user' ? 'Tú' : 'Claude';
+        div.innerHTML = `
+          <div class="msg-header">
+            <span class="role">${roleName}</span>
+            <span class="time">${time}</span>
+          </div>
+          <div class="msg-body">${formatMarkdown(content)}</div>
+        `;
+      }
 
-  try {
-    const r = await callClaude([{role:'user', content:prompt}]);
-    out.textContent = r;
-    status('Listo ✓','ok');
-  } catch(e) {
-    out.textContent = '⚠ ' + e.message;
-    status('Error','er');
-  } finally { setBusy(false); }
-}
+      chatArea.appendChild(div);
+      chatArea.scrollTop = chatArea.scrollHeight;
+    }
 
-// ═══════════════════════════════════
-//  UTILS
-// ═══════════════════════════════════
-function el(id) { return document.getElementById(id); }
-function v(id)  { return (el(id)||{}).value || ''; }
-function set(id, val) { const e = el(id); if(e) e.value = val || ''; }
-function esc(s) {
-  return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function status(txt, state) {
-  el('stxt').textContent = txt;
-  el('sdot').className = state || '';
-}
-function copyTxt(text) {
-  navigator.clipboard.writeText(text).then(()=>status('Copiado ✓','ok'))
-  .catch(()=>{
-    const t = document.createElement('textarea');
-    t.value = text; t.style.position='fixed'; t.style.opacity='0';
-    document.body.appendChild(t); t.select();
-    document.execCommand('copy'); t.remove();
-    status('Copiado ✓','ok');
-  });
-}
-</script>
+    function formatMarkdown(text) {
+      return text
+        .replace(/```(\w+)?\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/\n/g, '<br>');
+    }
+
+    function showTyping() {
+      const chatArea = document.getElementById('chatArea');
+      const div = document.createElement('div');
+      const id = 'typing-' + Date.now();
+      div.id = id;
+      div.className = 'message assistant';
+      div.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+      chatArea.appendChild(div);
+      chatArea.scrollTop = chatArea.scrollHeight;
+      return id;
+    }
+
+    function removeTyping(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    }
+
+    function updateStatus(state, text) {
+      const dot = document.getElementById('statusDot');
+      const label = document.getElementById('statusText');
+      dot.className = 'status-dot ' + state;
+      label.textContent = text;
+    }
+
+    async function updateContextInfo() {
+      if (!officeReady) return;
+      try {
+        await Excel.run(async (context) => {
+          const sheets = context.workbook.worksheets;
+          sheets.load('items/name');
+          await context.sync();
+          document.getElementById('ctxSheetsCount').textContent = `${sheets.items.length} hojas`;
+        });
+
+        const activeSheet = await readActiveSheet();
+        if (activeSheet && !activeSheet.empty) {
+          const cellCount = activeSheet.rows * activeSheet.cols;
+          document.getElementById('ctxCellsCount').textContent = `~${cellCount.toLocaleString()} celdas`;
+        }
+      } catch(e) { /* ignore */ }
+    }
+
+    function clearChat() {
+      conversationHistory = [];
+      const chatArea = document.getElementById('chatArea');
+      chatArea.innerHTML = '';
+      const welcome = document.getElementById('welcomeScreen');
+      if (welcome) {
+        welcome.style.display = '';
+        chatArea.appendChild(welcome);
+      }
+      showToast('Conversación limpiada', 'info');
+    }
+
+    function showToast(msg, type) {
+      const container = document.getElementById('toasts');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = msg;
+      container.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+  </script>
 </body>
 </html>
