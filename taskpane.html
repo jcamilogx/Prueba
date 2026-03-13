@@ -313,50 +313,61 @@ async function sendMessage(){
 // ═══════════════════════════════════════════════════════
 //  SYSTEM PROMPT
 // ═══════════════════════════════════════════════════════
-function buildSystem(){return`Eres un asistente experto en Excel, complemento empresarial.
+function buildSystem(){return`Eres un asistente experto en Excel, complemento empresarial. Tu trabajo es EJECUTAR acciones directamente en las hojas de Excel, NO mostrar código al usuario.
+
+REGLA CRÍTICA: El usuario NUNCA debe ver código JSON, bloques de código con operaciones, ni arrays de acciones. Todo lo que quieras hacer en Excel, ponlo EXCLUSIVAMENTE dentro de un bloque \`\`\`excel_operations. El usuario solo debe ver tu explicación en lenguaje natural de lo que hiciste o vas a hacer. Si necesitas crear un simulador, tabla, gráfico o cualquier cosa: HAZLO directamente en las hojas usando las operaciones, no muestres el código.
 
 CAPACIDADES: Leer libro completo (muestreo inteligente para >2000 filas), modificar celdas, crear hojas, fórmulas, gráficos nativos de Excel, tablas con filtros, formato condicional, fusionar celdas.
 
-FORMATO DE RESPUESTA OBLIGATORIO:
-- Para datos tabulares usa SIEMPRE tablas Markdown:
-| Col1 | Col2 | Col3 |
-|------|------|------|
-| val  | val  | val  |
-- Para KPIs usa tarjetas: [STAT:label=Ventas,value=$125K,sub=+12% vs anterior]
-- Para proporciones usa barras visuales: █████████ 90%
-- NUNCA muestres datos separados solo por pipes sin formato de tabla.
+FORMATO DE RESPUESTA:
+- Tu respuesta visible al usuario debe ser SOLO texto explicativo, tablas Markdown y tarjetas de estadísticas.
+- Para datos tabulares usa tablas Markdown:
+| Col1 | Col2 |
+|------|------|
+| val  | val  |
+- Para KPIs: [STAT:label=Ventas,value=$125K,sub=+12%]
+- Para proporciones: █████████ 90%
+- NUNCA muestres JSON, arrays, ni código de operaciones al usuario.
 
-OPERACIONES en bloque:
+CÓMO EJECUTAR ACCIONES (esto es invisible para el usuario):
+Incluye un bloque así en tu respuesta. El sistema lo intercepta, lo ejecuta, y lo oculta del chat:
 \`\`\`excel_operations
 [
-  {"action":"write_cells","sheet":"H1","startCell":"A1","values":[["a","b"],["c","d"]]},
-  {"action":"write_cell","sheet":"H1","cell":"A1","value":"x"},
-  {"action":"set_formula","sheet":"H1","cell":"B1","formula":"=SUM(A:A)"},
-  {"action":"create_sheet","name":"Nueva"},
-  {"action":"delete_rows","sheet":"H1","startRow":5,"count":2},
-  {"action":"insert_rows","sheet":"H1","startRow":3,"count":1},
-  {"action":"format_range","sheet":"H1","range":"A1:D1","format":{"bold":true,"bgColor":"#4472C4","color":"#FFF","fontSize":12,"borders":true,"wrapText":true,"hAlign":"Center","fontName":"Calibri"}},
-  {"action":"auto_fit","sheet":"H1"},
-  {"action":"sort_range","sheet":"H1","range":"A1:D20","column":0,"ascending":true},
-  {"action":"clear_range","sheet":"H1","range":"E:E"},
-  {"action":"merge_cells","sheet":"H1","range":"A1:D1"},
-  {"action":"create_chart","sheet":"H1","dataRange":"A1:D10","chartType":"column","title":"Ventas","position":{"left":350,"top":10,"width":500,"height":300}},
-  {"action":"create_chart","sheet":"H1","dataRange":"A1:B10","chartType":"pie","title":"Distribución"},
-  {"action":"add_table","sheet":"H1","range":"A1:D20","name":"Tabla1","style":"TableStyleMedium2"},
-  {"action":"conditional_format","sheet":"H1","range":"C2:C20","rule":{"type":"color_scale"}},
-  {"action":"conditional_format","sheet":"H1","range":"D2:D20","rule":{"type":"data_bar"}}
+  {"action":"write_cells","sheet":"Hoja1","startCell":"A1","values":[["Encabezado1","Encabezado2"],["dato1","dato2"]]},
+  {"action":"write_cell","sheet":"Hoja1","cell":"A1","value":"texto"},
+  {"action":"set_formula","sheet":"Hoja1","cell":"B2","formula":"=SUM(A:A)"},
+  {"action":"create_sheet","name":"NuevaHoja"},
+  {"action":"delete_rows","sheet":"Hoja1","startRow":5,"count":2},
+  {"action":"insert_rows","sheet":"Hoja1","startRow":3,"count":1},
+  {"action":"format_range","sheet":"Hoja1","range":"A1:D1","format":{"bold":true,"bgColor":"#4472C4","color":"#FFF","fontSize":12,"borders":true,"wrapText":true,"hAlign":"Center","fontName":"Calibri"}},
+  {"action":"auto_fit","sheet":"Hoja1"},
+  {"action":"sort_range","sheet":"Hoja1","range":"A1:D20","column":0,"ascending":true},
+  {"action":"clear_range","sheet":"Hoja1","range":"E:E"},
+  {"action":"merge_cells","sheet":"Hoja1","range":"A1:D1"},
+  {"action":"create_chart","sheet":"Hoja1","dataRange":"A1:D10","chartType":"column","title":"Ventas","position":{"left":350,"top":10,"width":500,"height":300}},
+  {"action":"add_table","sheet":"Hoja1","range":"A1:D20","name":"Tabla1","style":"TableStyleMedium2"},
+  {"action":"conditional_format","sheet":"Hoja1","range":"C2:C20","rule":{"type":"color_scale"}},
+  {"action":"conditional_format","sheet":"Hoja1","range":"D2:D20","rule":{"type":"data_bar"}}
 ]
 \`\`\`
+
+IMPORTANTE - USA SIEMPRE la etiqueta excel_operations, NUNCA uses \`\`\`json ni \`\`\`javascript ni ningún otro nombre de bloque para las operaciones. Solo \`\`\`excel_operations será ejecutado.
 
 Tipos gráfico: bar, bar_stacked, column, column_stacked, line, line_markers, pie, doughnut, area, scatter, radar
 Estilos tabla: TableStyleLight1-21, TableStyleMedium1-28, TableStyleDark1-11
 
-Para leer rangos de hojas grandes:
+Para pedir datos de hojas grandes (también invisible para el usuario):
 \`\`\`read_range
 {"sheet":"Hoja","range":"A5000:J5200"}
 \`\`\`
 
-REGLAS: Explica antes de operar. Nombres exactos de hojas. Fórmulas en sintaxis Excel. Responde en español.`;}
+REGLAS FINALES:
+- Explica brevemente qué vas a hacer, luego incluye el bloque excel_operations.
+- Usa nombres EXACTOS de hojas del libro.
+- Fórmulas en sintaxis Excel estándar.
+- Responde en español.
+- JAMÁS muestres el JSON de operaciones como texto visible. Si lo haces, el usuario verá código basura.`;}
+
 
 // ═══════════════════════════════════════════════════════
 //  CONTEXT
@@ -383,9 +394,28 @@ function buildContext(bd){
 function fmtData(d,max,startR){let t='';for(let i=0;i<Math.min(d.length,max);i++)t+=`[F${startR?startR+i:i+1}] ${d[i].join(' │ ')}\n`;return t;}
 
 // ── PARSERS ──
-function extractOps(t){const o=[],rx=/```excel_operations\s*\n?([\s\S]*?)```/g;let m;while((m=rx.exec(t))!==null){try{const p=JSON.parse(m[1].trim());if(Array.isArray(p))o.push(...p);}catch(e){}}return o;}
+function extractOps(t){
+  const o=[];
+  // 1) Bloques etiquetados excel_operations
+  const rx1=/```excel_operations\s*\n?([\s\S]*?)```/g;let m;
+  while((m=rx1.exec(t))!==null){try{const p=JSON.parse(m[1].trim());if(Array.isArray(p))o.push(...p);}catch(e){}}
+  // 2) Cualquier bloque de código que contenga JSON con "action" (por si Claude usa ```json o similar)
+  if(o.length===0){
+    const rx2=/```(?:json|javascript|excel|js)?\s*\n?(\[[\s\S]*?\])\s*```/g;
+    while((m=rx2.exec(t))!==null){try{const p=JSON.parse(m[1].trim());if(Array.isArray(p)&&p.length>0&&p[0].action)o.push(...p);}catch(e){}}
+  }
+  return o;
+}
 function extractRR(t){const r=[],rx=/```read_range\s*\n?([\s\S]*?)```/g;let m;while((m=rx.exec(t))!==null){try{const p=JSON.parse(m[1].trim());if(p.sheet&&p.range)r.push(p);}catch(e){}}return r;}
-function cleanResp(t){return t.replace(/```excel_operations[\s\S]*?```/g,'').replace(/```read_range[\s\S]*?```/g,'').trim();}
+function cleanResp(t){
+  // Limpiar bloques excel_operations y read_range
+  let clean=t.replace(/```excel_operations[\s\S]*?```/g,'').replace(/```read_range[\s\S]*?```/g,'');
+  // Limpiar cualquier bloque de código que contenga JSON con "action" (operaciones que Claude puso en formato genérico)
+  clean=clean.replace(/```(?:json|javascript|excel|js)?\s*\n?\[[\s\S]*?"action"[\s\S]*?\]\s*```/g,'');
+  // Limpiar líneas vacías excesivas que quedan después de remover bloques
+  clean=clean.replace(/\n{3,}/g,'\n\n');
+  return clean.trim();
+}
 
 // ═══════════════════════════════════════════════════════
 //  RICH RENDERING
