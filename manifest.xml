@@ -7,8 +7,8 @@
   xsi:type="TaskPaneApp">
 
   <Id>a1b2c3d4-e5f6-7890-abcd-ef1234567890</Id>
-  <Version>1.0.0.0</Version>
-  <ProviderName>Tu Empresa</ProviderName>
+  <Version>2.0.0.0</Version>
+  <ProviderName>jcamilogx</ProviderName>
   <DefaultLocale>es-ES</DefaultLocale>
   <DisplayName DefaultValue="Claude AI para Excel" />
   <Description DefaultValue="Complemento empresarial de IA con Claude Sonnet via Azure Foundry. Lee y modifica todo el libro de Excel." />
